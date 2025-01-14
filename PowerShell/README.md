@@ -17,18 +17,18 @@ Voici une vue d'ensemble des scripts disponibles dans ce dépôt. Chaque script 
 
 | Script | Description |
 | --- | --- |
-| [.Template-MsGraph.ps1](/PowerShell/Scripts/.Template-MsGraph/.Template-MsGraph.ps1) | Modèle de script pour interagir avec l'API Microsoft Graph. [Read More](/PowerShell/Documentation/.Template-MsGraph/Readme.md) |
-| [Add-CompagnyUsers.ps1](/PowerShell/Scripts/Add-CompagnyUsers/Add-CompagnyUsers.ps1) | Créer des utilisateurs dans Active Directory a l'aide d'un fichier CSV. [Read More](/PowerShell/Documentation/Add-CompagnyUsers/Readme.md) |
-| [Check-AADLastSynchronisation.ps1](/PowerShell/Scripts/Check-AADLastSynchronisation/Check-AADLastSynchronisation.ps1) | Vérifie la dernière synchronisation Azure AD. [Read More](/PowerShell/Documentation/Check-AADLastSynchronisation/Readme.md) |
-| [Check-AzureAppsCredExpiration.ps1](/PowerShell/Scripts/Check-AzureAppsCredExpiration/Check-AzureAppsCredExpiration.ps1) | Vérifie les dates d'expiration des informations d'identification des applications Azure. [Read More](/PowerShell/Documentation/Check-AzureAppsCredExpiration/Readme.md) |
-| [Check-BitLocker.ps1](/PowerShell/Scripts/Check-BitLocker/Check-BitLocker.ps1) | Vérifie l'état de BitLocker sur les ordinateurs. [Read More](/PowerShell/Documentation/Check-BitLocker/Readme.md) |
-| [Check-MailBoxSize.ps1](/PowerShell/Scripts/Check-MailBoxSize/Check-MailBoxSize.ps1) | Vérifie la taille des boîtes aux lettres. [Read More](/PowerShell/Documentation/Check-MailBoxSize/Readme.md) |
-| [Check-WBDisabledUsersTime.ps1](/PowerShell/Scripts/Check-WBDisabledUsersTime/Check-WBDisabledUsersTime.ps1) | Vérifie les utilisateurs désactivés dans AD et génère des rapports. [Read More](/PowerShell/Documentation/Check-WBDisabledUsersTime/Readme.md) |
-| [Disable-WBInactiveUsers.ps1](/PowerShell/Scripts/Disable-WBInactiveUsers/Disable-WBInactiveUsers.ps1) | Désactive automatiquement les utilisateurs inactifs dans AD en fonction des critères définis. [Read More](/PowerShell/Documentation/Disable-WBInactiveUsers/Readme.md) |
-| [Repair-WBADObjectsOwner.ps1](/PowerShell/Scripts/Repair-WBADObjectsOwner/Repair-WBADObjectsOwner.ps1) | Corrige les propriétaires incorrects des objets dans AD. [Read More](/PowerShell/Documentation/Repair-WBADObjectsOwner/Readme.md) |
-| [Repair-WBADSysvolFilesOwner.ps1](/PowerShell/Scripts/Repair-WBADSysvolFilesOwner/Repair-WBADSysvolFilesOwner.ps1) | Répare les permissions et les propriétaires des fichiers dans le dossier SYSVOL. [Read More](/PowerShell/Documentation/Repair-WBADSysvolFilesOwner/Readme.md) |
-| [Run-WBPingCastle.ps1](/PowerShell/Scripts/Run-WBPingCastle/Run-WBPingCastle.ps1) | Automatisation des analyses PingCastle pour détecter et corriger les vulnérabilités de sécurité dans Active Directory. [Read More](/PowerShell/Documentation/Run-WBPingCastle/Readme.md) |
-| [Start-ConnectTenant.ps1](/PowerShell/Scripts/Start-ConnectTenant/Start-ConnectTenant.ps1) | Établit et gère la connexion au locataire Microsoft. [Read More](/PowerShell/Documentation/Start-ConnectTenant/Readme.md) |
+| [.Template-MsGraph.ps1](/PowerShell/Scripts/.Template-MsGraph/.Template-MsGraph.ps1) | Modèle de script pour interagir avec l'API Microsoft Graph. [Read More](/PowerShell/Documentation/.Template-MsGraph/ReadMe.md) |
+| [Add-CompagnyUsers.ps1](/PowerShell/Scripts/Add-CompagnyUsers/Add-CompagnyUsers.ps1) | Créer des utilisateurs dans Active Directory a l'aide d'un fichier CSV. [Read More](/PowerShell/Documentation/Add-CompagnyUsers/ReadMe.md) |
+| [Check-AADLastSynchronisation.ps1](/PowerShell/Scripts/Check-AADLastSynchronisation/Check-AADLastSynchronisation.ps1) | Vérifie la dernière synchronisation Azure AD. [Read More](/PowerShell/Documentation/Check-AADLastSynchronisation/ReadMe.md) |
+| [Check-AzureAppsCredExpiration.ps1](/PowerShell/Scripts/Check-AzureAppsCredExpiration/Check-AzureAppsCredExpiration.ps1) | Vérifie les dates d'expiration des informations d'identification des applications Azure. [Read More](/PowerShell/Documentation/Check-AzureAppsCredExpiration/ReadMe.md) |
+| [Check-BitLocker.ps1](/PowerShell/Scripts/Check-BitLocker/Check-BitLocker.ps1) | Vérifie l'état de BitLocker sur les ordinateurs. [Read More](/PowerShell/Documentation/Check-BitLocker/ReadMe.md) |
+| [Check-MailBoxSize.ps1](/PowerShell/Scripts/Check-MailBoxSize/Check-MailBoxSize.ps1) | Vérifie la taille des boîtes aux lettres. [Read More](/PowerShell/Documentation/Check-MailBoxSize/ReadMe.md) |
+| [Check-WBDisabledUsersTime.ps1](/PowerShell/Scripts/Check-WBDisabledUsersTime/Check-WBDisabledUsersTime.ps1) | Vérifie les utilisateurs désactivés dans AD et génère des rapports. [Read More](/PowerShell/Documentation/Check-WBDisabledUsersTime/ReadMe.md) |
+| [Disable-WBInactiveUsers.ps1](/PowerShell/Scripts/Disable-WBInactiveUsers/Disable-WBInactiveUsers.ps1) | Désactive automatiquement les utilisateurs inactifs dans AD en fonction des critères définis. [Read More](/PowerShell/Documentation/Disable-WBInactiveUsers/ReadMe.md) |
+| [Repair-WBADObjectsOwner.ps1](/PowerShell/Scripts/Repair-WBADObjectsOwner/Repair-WBADObjectsOwner.ps1) | Corrige les propriétaires incorrects des objets dans AD. [Read More](/PowerShell/Documentation/Repair-WBADObjectsOwner/ReadMe.md) |
+| [Repair-WBADSysvolFilesOwner.ps1](/PowerShell/Scripts/Repair-WBADSysvolFilesOwner/Repair-WBADSysvolFilesOwner.ps1) | Répare les permissions et les propriétaires des fichiers dans le dossier SYSVOL. [Read More](/PowerShell/Documentation/Repair-WBADSysvolFilesOwner/ReadMe.md) |
+| [Run-WBPingCastle.ps1](/PowerShell/Scripts/Run-WBPingCastle/Run-WBPingCastle.ps1) | Automatisation des analyses PingCastle pour détecter et corriger les vulnérabilités de sécurité dans Active Directory. [Read More](/PowerShell/Documentation/Run-WBPingCastle/ReadMe.md) |
+| [Start-ConnectTenant.ps1](/PowerShell/Scripts/Start-ConnectTenant/Start-ConnectTenant.ps1) | Établit et gère la connexion au locataire Microsoft. [Read More](/PowerShell/Documentation/Start-ConnectTenant/ReadMe.md) |
 |xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx|xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx|
 ## ❓ Besoin d'aide ?
 
