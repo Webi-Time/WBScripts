@@ -41,7 +41,7 @@ WarningVariable, OutBuffer, PipelineVariable, and OutVariable.
 </p>
 
 - ## Modules
-	- Ensure the **ModuleGenerics** module is installed. More information [How to install **ModuleGenerics**](/Powershell/README.md)
+	- Ensure the **ModuleGenerics** module is installed. More information [How to install **ModuleGenerics**](/PowerShell/README.md)
 
 	- The script use function for download and upgrade Microsoft Graph Modules, but you can fixe the module version with **$GraphModulesVrs** variable
 <p align='center'>
@@ -51,7 +51,7 @@ WarningVariable, OutBuffer, PipelineVariable, and OutVariable.
 - ## Parameters
 	- CSVPath: The path to the CSV file containing user information. This file should follow a specific format with user attributes.
 
-This JSON file contains configurations for a script. It is structured into three sections: Generic, Tenant and Script. Find more explanation [here](/Powershell/README.md)
+This JSON file contains configurations for a script. It is structured into three sections: Generic, Tenant and Script. Find more explanation [here](/PowerShell/README.md)
 
 # Example
 

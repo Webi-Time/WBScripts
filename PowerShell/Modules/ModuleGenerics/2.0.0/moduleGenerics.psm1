@@ -644,7 +644,7 @@
             }
         } catch {
             Log "Script" "Error - Installing Package Provider [$name]." 1 Red
-            Log "Script" "Run Command bellow in admin Powershell :" 1 Red
+            Log "Script" "Run Command bellow in admin PowerShell :" 1 Red
             Log "Script" "`tInstall-PackageProvider -Name $name -Force" 1 Red
             Get-DebugError $_
             throw 

@@ -58,12 +58,12 @@ WarningVariable, OutBuffer, PipelineVariable, and OutVariable.
 - https://github.com/Webi-Time/WBScripts/blob/main/PowerShell/Scripts/Run-WBPingCastle/Run-WBPingCastle.ps1
 # Prerequisite
 - ## Modules
-	- Ensure the **ModuleGenerics** module is installed. More information [How to install **ModuleGenerics**](/Powershell/README.md)
+	- Ensure the **ModuleGenerics** module is installed. More information [How to install **ModuleGenerics**](/PowerShell/README.md)
 
 
 - ## Parameters
 
-This JSON file contains configurations for a script. It is structured into three sections: Generic, Tenant and Script. Find more explanation [here](/Powershell/README.md)
+This JSON file contains configurations for a script. It is structured into three sections: Generic, Tenant and Script. Find more explanation [here](/PowerShell/README.md)
 
 # Example
 
