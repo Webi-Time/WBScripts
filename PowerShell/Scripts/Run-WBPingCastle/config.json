@@ -1,0 +1,10 @@
+{
+    "Generic":  {
+                    "FilesToKeep":  500,
+                    "SpaceToUseByScriptsMax":  "10MB"
+                },
+    "Script":  {
+                   "TemplateHTMLPath":  "TemplateHTML.html",
+                   "PingCastleVersion":  "3.3.0.1"
+               }
+}

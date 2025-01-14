@@ -1,0 +1,17 @@
+{
+    "Generic":  {
+                    "FilesToKeep":  500,
+                    "SpaceToUseByScriptsMax":  "10MB"
+                },
+    "Script":  {
+                   "TemplateHTMLPath":  "TemplateHTML.html",
+                   "FilterAccounts":  "*",
+                   "FilterOU":  "*",
+                   "DayBeforeDelete":  200,
+                   "ExcludedAccounts":  [
+                                            "krbtgt",
+                                            "Administrator",
+                                            "Guest"
+                                        ]
+               }
+}

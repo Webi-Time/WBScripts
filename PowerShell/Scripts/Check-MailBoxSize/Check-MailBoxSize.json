@@ -1,0 +1,20 @@
+{
+    "Generic":  {
+                    "FilesToKeep":  500,
+                    "SpaceToUseByScriptsMax":  "10MB"
+                },
+    "Tenant":  {
+                   "clientId":  "71xxxx5x-xx7f-43xx-axx4-exxxadxxxxd9",
+                   "tenantId":  "7xxxed1c-exxx-4xx7-ac96-x9dbcxxxx0f4",
+                   "clientCertificate":  "036ABBB8A6C8587E6C86CCCEDCE1184136615AE4",
+                   "tenantName":  "TenantName.onmicrosoft.com"
+               },
+    "Script":  {
+                   "Mail":  {
+                                "TemplatePath":  "MailSizeMailBox.html",
+                                "FromMail":  "No-Reply-AutomationScript@TenantName.onmicrosoft.com",
+                                "ToMail":  "Destination@domaine.tld"
+                            },
+                   "seuilMailAlert":  "5MB"
+               }
+}

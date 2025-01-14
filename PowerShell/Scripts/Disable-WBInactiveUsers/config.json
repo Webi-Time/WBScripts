@@ -1,0 +1,19 @@
+{
+    "Generic":  {
+                    "FilesToKeep":  500,
+                    "SpaceToUseByScriptsMax":  "10MB"
+                },
+    "Script":  {
+                   "TemplateHTMLPath":  "TemplateMail.html",
+                   "FilterAccounts":  "*",
+                   "FilterOU":  "*",
+                   "DisableUserOUPath":  "OU=disable,OU=_Tier 2,OU=Test,DC=domain,DC=tld",
+                   "DayBeforePwdExpired":  30,
+                   "DayBeforeInactive":  180,
+                   "ExcludedAccounts":  [
+                                            "krbtgt",
+                                            "Administrator",
+                                            "Guest"
+                                        ]
+               }
+}

@@ -1,0 +1,14 @@
+{
+    "Generic":  {
+                    "FilesToKeep":  500,
+                    "SpaceToUseByScriptsMax":  "10MB"
+                },
+    "Script":  {
+                   "TemplateHTMLPath":  "TemplateHTML.html",
+                   "ExcludeGroups":  null,
+                   "ExcludeGroupsSample":  [
+                                               "user1",
+                                               "user2"
+                                           ]
+               }
+}

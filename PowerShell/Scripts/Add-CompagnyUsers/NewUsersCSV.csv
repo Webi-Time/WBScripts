@@ -1,0 +1,4 @@
+﻿GivenName;Surname;DisplayName;Name;Description;Office;EmailAddress;proxyAddresses;StreetAddress;City;State;PostalCode;Country;Company;Department;Manager;Title;MobilePhone;MemberOf;SamAccountName;UserPrincipalName;Enabled;Path
+Damien;LAPOSE;Damien LAPOSE;Damien LAPOSE;Test Account Creation;NA;;;32 avenue des Lombes;Paris;France;75009;fr;FictivComp;Identity;;SLM;01.12.23.34.56;;d.lapose;damien.lapose@webi-time.fr;True;OU=Paris,OU=Test,DC=domain,DC=tld
+Jean;TRIDE;Jean TRIDE;Jean TRIDE;Test Account Creation;NA;;;32 avenue des Lombes;Paris;France;75009;fr;FictivComp;Identity;;Consultant;;;j.tride;jean.tride@webi-time.fr;True;OU=Paris,OU=Test,DC=domain,DC=tld
+Patrick;TOUFFE;Patrick TOUFFE;Patrick TOUFFE;Test Account Creation;NA;;;32 avenue des Lombes;Paris;France;75009;fr;FictivComp;R&D;;Consultant;;Grp-Partages-RW-All-GLS;j.touffe;jean.touffe@webi-time.fr;False;OU=Paris,OU=Test,DC=domain,DC=tld
