@@ -6,8 +6,7 @@ Log files and generated reports are organized and maintained according to the co
 
 # Syntax
 ```powershell
-.\Run-WBPingCastle.ps1 [[-VerboseLvl] <Byte>] [[-Domain] <String>] [[-ResultPath] <String>] 
-[<CommonParameters>]
+.\Run-WBPingCastle.ps1 [[-VerboseLvl] <Byte>] [[-Domain] <String>] [[-ResultPath] <String>] [<CommonParameters>]
 ```
 
 This script supports the common parameters: Verbose, Debug, ErrorAction, ErrorVariable, WarningAction, 
@@ -36,7 +35,7 @@ WarningVariable, OutBuffer, PipelineVariable, and OutVariable.
     
     Obligatoire :                         false
     Position :                            2
-    Valeur par défaut                     (Get-ADDomain).DNSRoot
+    Valeur par défaut                     
     Accepter l entrée de pipeline :       false
     Accepter les caractères génériques :  false
 ```
@@ -58,12 +57,13 @@ WarningVariable, OutBuffer, PipelineVariable, and OutVariable.
 - https://github.com/Webi-Time/WBScripts/blob/main/PowerShell/Scripts/Run-WBPingCastle/Run-WBPingCastle.ps1
 # Prerequisite
 - ## Modules
-	- Ensure the **ModuleGenerics** module is installed. More information [How to install **ModuleGenerics**](/PowerShell/README.md)
+	- Ensure the **ModuleGenerics** module is installed. More information [How to install **ModuleGenerics**](/PowerShell/ReadMe-Modules-Installation.md)
 
 
 - ## Parameters
+	JSON File
 
-This JSON file contains configurations for a script. It is structured into three sections: Generic, Tenant and Script. Find more explanation [here](/PowerShell/README.md)
+This JSON file contains configurations for a script. It is structured into three sections: Generic, Tenant and Script. Find more explanation [here](/PowerShell/ReadMe-JSON-File.md)
 
 # Example
 
@@ -87,4 +87,26 @@ PS>  .\Run-WBPingCastle.ps1 -ResultPath "C:\PingCastleResult"
 
 Runs the script and save PingCastle repport in specified directory
 ```
+
+## Notes
+Additional Notes:
+
+Ensure the PingCastle tool is placed in the script's root directory before execution.
+
+Ensure the required PowerShell modules (ModuleGenerics, ActiveDirectory) are installed and accessible.
+
+>Author: Damien Aubril
+
+>License: Not applicable
+
+>Date: December 4, 2024
+
+
+>Version: 1.0
+
+Change Log :
+- Update - 12/12/2024
+
+# Execution
+<img src='Run-WBPingCastle-Execution.png' alt='Run-WBPingCastle-Execution' width='auto' height='auto' />
 

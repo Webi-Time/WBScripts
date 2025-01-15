@@ -15,9 +15,6 @@
     - `5`: Ultra verbose logging. Displays debug information, detailed log messages, standard information, and errors.
 
 
-.PARAMETER AllowBeta
-    If set to $true, the script will allow the installation of beta versions of Microsoft Graph modules. By default, it is set to $false.
-
 .INPUTS
     - JSON File with tenant information
     - Variable : description
@@ -42,16 +39,14 @@
 Param
 (
     [Parameter(Mandatory = $false)][ValidateSet(0, 1, 2, 3, 4, 5)]
-    [byte]$VerboseLvl = 2,
-    
-    [Parameter(mandatory=$false)]
-    [switch]$AllowBeta = $false
+    [byte]$VerboseLvl = 2
 )
 
 Begin
 {
-#region Begin
-    try{
+
+    try
+    {
         Clear-Host
         $StartScript = Get-Date
         if($VerboseLvl -ne 0){Write-host "$(Get-Date -f 'dd/MM/yyyy HH:mm:ss') - Script start : " -f Cyan -NoNewline; Write-host "[$($MyInvocation.MyCommand.Name)]" -f Red}
@@ -74,7 +69,7 @@ Begin
             # Get the date in "yyyy-MM-dd-HH-mm-ss" format for log files
                 [string]$global:Date_Logs_File = Get-Date -Format "yyyy-MM-dd-HH-mm-ss"
                         $global:VerboseLvl = $VerboseLvl
-        #endregion Script Variables
+        #endregion
 
         #region JSON Config
 
@@ -101,7 +96,7 @@ Begin
                 [string]$FromMail       = $Script_Param.Mail.FromMail
                 [string]$ToMail         = $Script_Param.Mail.ToMail
                 [string]$mailTemplatePath = $Script_Param.Mail.TemplatePath
-        #endregion JSON Config
+        #endregion
 
         #region Modules
             
@@ -156,7 +151,7 @@ Begin
                 exit 1
             }
 
-        #endregion Modules
+        #endregion
 
         #region function
        
@@ -167,7 +162,7 @@ Begin
             #> ##############################################################################
         
         
-        #endregion function
+        #endregion
 
         
         #region Script Prerequisites
@@ -188,7 +183,7 @@ Begin
             $SpaceUsed = Test-SpaceFolders ($global:Path_Logs,$Path_Result) $FilesToKeep $SpaceMax
             Log "Script" "$ScriptName - use $SpaceUsed of $(WSize $SpaceMax) limit" 2 Cyan
 
-        #endregion Prerequisites
+        #endregion
         
     }
     catch 
@@ -197,12 +192,10 @@ Begin
         exit 1
     }
     
-
-#endregion Begin
 }
 Process
 {
-#region Process
+
     try 
     {
         Log "Script" "Start of script : $($MyInvocation.MyCommand.Name)" 99 Cyan  
@@ -226,7 +219,7 @@ Process
                                                     -replace "!--REAL_DATE--!", $RealDate `
                                                     -replace "!--DELTA_DATE--!", $(WDate -dateW $Difference -typeInput Hour) `
                                                     -replace "!--ERROR_MAIL--!", $errMailAD
-            #endregion For send EMAIL with Text
+            #endregion
             
             #region For send EMAIL with Table
                 for ($i = 0; $i -lt 3; $i++) {
@@ -239,7 +232,7 @@ Process
                 [string]$ObjectMessage = "User DEFAULT"
                 [string]$BodyMessage = $mailTemplate -replace "!--TABLE_USERS--!", $(($Users | Select-Object * | ConvertTo-Html -Fragment -As Table )) `
                                                      -replace "!--ERROR_MAIL--!", $errMailAD
-            #endregion For send EMAIL with Table
+            #endregion
             try
             {
                 if (-not [string]::IsNullOrEmpty($errMailAD)) 
@@ -259,7 +252,7 @@ Process
                 Log "Script" "Error - Unable to send mail" 1 Red
                 Get-DebugError $_             
             }
-        #endregion MAIL
+        #endregion
 
         Disconnect-MsGraphTenant
     }
@@ -267,11 +260,11 @@ Process
         Get-DebugError $_
         exit 1
     }
-#endregion Process
+
 }
 End
 {
-#region End
+
     try
     {
         $Temps = ((Get-Date )-(Get-Date $StartScript)).ToString().Split('.')[0]
@@ -286,6 +279,6 @@ End
         Get-DebugError $_
         exit 1
     }
-#endregion End
+
 }
 

@@ -4,7 +4,7 @@ This script description
 
 # Syntax
 ```powershell
-.\Template-MsGraph.ps1 [[-VerboseLvl] <Byte>] [-AllowBeta] [<CommonParameters>]
+.\Template-MsGraph.ps1 [[-VerboseLvl] <Byte>] [<CommonParameters>]
 ```
 
 This script supports the common parameters: Verbose, Debug, ErrorAction, ErrorVariable, WarningAction, 
@@ -27,16 +27,6 @@ WarningVariable, OutBuffer, PipelineVariable, and OutVariable.
     Accepter l entrée de pipeline :       false
     Accepter les caractères génériques :  false
 ```
-```powershell
--AllowBeta [<SwitchParameter>]
-     If set to $true, the script will allow the installation of beta versions of Microsoft Graph modules. By default, it is set to $false.
-    
-    Obligatoire :                         false
-    Position :                            named
-    Valeur par défaut                     False
-    Accepter l entrée de pipeline :       false
-    Accepter les caractères génériques :  false
-```
 
 
 # Related Links
@@ -52,7 +42,7 @@ WarningVariable, OutBuffer, PipelineVariable, and OutVariable.
 </p>
 
 - ## Modules
-	- Ensure the **ModuleGenerics** module is installed. More information [How to install **ModuleGenerics**](/PowerShell/README.md)
+	- Ensure the **ModuleGenerics** module is installed. More information [How to install **ModuleGenerics**](/PowerShell/ReadMe-Modules-Installation.md)
 
 	- The script use function for download and upgrade Microsoft Graph Modules, but you can fixe the module version with **$GraphModulesVrs** variable
 <p align='center'>
@@ -63,7 +53,7 @@ WarningVariable, OutBuffer, PipelineVariable, and OutVariable.
 	- JSON File with tenant information
 - Variable : description
 
-This JSON file contains configurations for a script. It is structured into three sections: Generic, Tenant and Script. Find more explanation [here](/PowerShell/README.md)
+This JSON file contains configurations for a script. It is structured into three sections: Generic, Tenant and Script. Find more explanation [here](/PowerShell/ReadMe-JSON-File.md)
 
 # Example
 
@@ -71,3 +61,18 @@ This JSON file contains configurations for a script. It is structured into three
 ```powershell
 PS> .\script.ps1 -paramater
 ```
+
+## Notes
+Ensure the [ModuleGenerics] module is installed and that you have the necessary permissions to access Azure AD data.
+
+>Author = 'AUBRIL Damien'
+
+>Creation Date : 26/10/2023
+
+>Version : 2.0
+
+>Version Date : 05/09/2024
+
+# Execution
+<img src='Template-MsGraph-Execution.png' alt='Template-MsGraph-Execution' width='auto' height='auto' />
+

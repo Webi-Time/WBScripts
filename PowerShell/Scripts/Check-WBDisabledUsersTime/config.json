@@ -7,7 +7,7 @@
                    "TemplateHTMLPath":  "TemplateHTML.html",
                    "FilterAccounts":  "*",
                    "FilterOU":  "*",
-                   "DayBeforeDelete":  200,
+                   "DayBeforeDelete":  365,
                    "ExcludedAccounts":  [
                                             "krbtgt",
                                             "Administrator",

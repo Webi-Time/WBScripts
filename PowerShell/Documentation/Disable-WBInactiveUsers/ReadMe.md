@@ -7,8 +7,7 @@ The results are documented in log files and reports to ensure clear tracking of 
 
 # Syntax
 ```powershell
-.\Disable-WBInactiveUsers.ps1 [[-VerboseLvl] <Byte>] [[-Domain] <String>] [[-PasswordCheck]] 
-[[-InactiveCheck]] [[-WhatIf]] [[-ResultPath] <String>] [<CommonParameters>]
+.\Disable-WBInactiveUsers.ps1 [[-VerboseLvl] <Byte>] [[-Domain] <String>] [[-PasswordCheck]] [[-InactiveCheck]] [[-WhatIf]] [[-ResultPath] <String>] [<CommonParameters>]
 ```
 
 This script supports the common parameters: Verbose, Debug, ErrorAction, ErrorVariable, WarningAction, 
@@ -37,7 +36,7 @@ WarningVariable, OutBuffer, PipelineVariable, and OutVariable.
     
     Obligatoire :                         false
     Position :                            2
-    Valeur par défaut                     (Get-ADDomain).DNSRoot
+    Valeur par défaut                     
     Accepter l entrée de pipeline :       false
     Accepter les caractères génériques :  false
 ```
@@ -89,12 +88,12 @@ WarningVariable, OutBuffer, PipelineVariable, and OutVariable.
 - https://github.com/Webi-Time/WBScripts/blob/main/PowerShell/Scripts/Disable-WBInactiveUsers/Disable-WBInactiveUsers.ps1
 # Prerequisite
 - ## Modules
-	- Ensure the **ModuleGenerics** module is installed. More information [How to install **ModuleGenerics**](/PowerShell/README.md)
+	- Ensure the **ModuleGenerics** module is installed. More information [How to install **ModuleGenerics**](/PowerShell/ReadMe-Modules-Installation.md)
 
 
 - ## Parameters
 
-This JSON file contains configurations for a script. It is structured into three sections: Generic, Tenant and Script. Find more explanation [here](/PowerShell/README.md)
+This JSON file contains configurations for a script. It is structured into three sections: Generic, Tenant and Script. Find more explanation [here](/PowerShell/ReadMe-JSON-File.md)
 
 # Example
 
@@ -116,3 +115,21 @@ This example checks for users with expired passwords and inactive accounts in th
 
 and performing actions (disabling users and moving them to a specified OU).
 ```
+
+## Notes
+Additional Notes:
+
+Ensure the required PowerShell modules (ModuleGenerics, ActiveDirectory) are installed and accessible.
+
+>Author: Damien Aubril
+
+>License: Not applicable
+
+>Date: December 12, 2025
+
+
+>Version: 1.0
+
+# Execution
+<img src='Disable-WBInactiveUsers-Execution.png' alt='Disable-WBInactiveUsers-Execution' width='auto' height='auto' />
+

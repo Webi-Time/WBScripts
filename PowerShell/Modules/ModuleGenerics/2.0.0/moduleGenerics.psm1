@@ -1383,9 +1383,16 @@
             [Parameter(Mandatory)]
             [ArgumentCompleter({
                     param($Command, $Parameter, $WordToComplete, $CommandAst, $FakeBoundParams)
-                    [string[]]$Global:AllMsGraphModule
+                    $Global:AllMsGraphModule
             })]
-            [ValidateScript({[bool]([string[]]$Global:AllMsGraphModule -match $_)})]
+            [ValidateScript({
+                if([string]::IsNullOrEmpty($Global:AllMsGraphModule))
+                {
+                    Log "Script" "Need te retrive graph module" 1 Yellow
+                    [string[]]$Global:AllMsGraphModule = (Find-Module "Microsoft.Graph*").Name | Where-Object {$_ -notlike "*beta*"};
+                }
+                [bool]($Global:AllMsGraphModule -match $_)
+            })]
             [string[]]$ModuleNecessaire,
             
             [Parameter(Mandatory=$false)]
@@ -1433,9 +1440,16 @@
             [Parameter(Mandatory)]
             [ArgumentCompleter({
                     param($Command, $Parameter, $WordToComplete, $CommandAst, $FakeBoundParams)
-                    [string[]]$Global:AllMsGraphModule
+                    $Global:AllMsGraphModule
             })]
-            [ValidateScript({[bool]([string[]]$Global:AllMsGraphModule -match $_)})]
+            [ValidateScript({
+                if([string]::IsNullOrEmpty($Global:AllMsGraphModule))
+                {
+                    Log "Script" "Need te retrive graph module" 1 Yellow
+                    [string[]]$Global:AllMsGraphModule = (Find-Module "Microsoft.Graph*").Name | Where-Object {$_ -notlike "*beta*"};
+                }
+                [bool]($Global:AllMsGraphModule -match $_)
+            })]
             [string[]]$ModuleNecessaire,
             
             [Parameter(Mandatory=$false)]

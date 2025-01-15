@@ -1,0 +1,14 @@
+{
+    "Generic":  {
+                    "FilesToKeep":  500,
+                    "SpaceToUseByScriptsMax":  "10MB"
+                },
+    "Script":  {
+                   "TemplateHTMLPath":  "TemplateHTML.html",
+                   "OUBase":  "OU=PrivDom,DC=PrivDom,DC=tld",
+                   "ComputerToExclude":  [
+                                             "ORDINATEUR_1",
+                                             "ORDINATEUR_2"
+                                         ]
+               }
+}

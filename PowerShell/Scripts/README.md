@@ -2,73 +2,60 @@
 # Collection de scripts PowerShell
 Ce document regroupe une collection de scripts classés par catégories pour faciliter la gestion, la configuration, la création et la maintenance des environnements informatiques.
 
-
-
-# 🛠️ Configuration
-
-## ⚙️ Active Directory
-
-## ⚙️ Hyper-V
-
-
-
-
 # 🛠️ Création
 
-## 🏢 Active Directory
+# 📜 Configuration
 
-
-## 💻 Hyper-V
-
-
-## 📂 Autres
-
-
-
-
-## 🛡️ Maintenance et Contrôle Opérationnel (MCO/MCS)
+# 🛡️ Maintenance et Contrôle Opérationnel (MCO/MCS)
 
 ## 🌐 Active Directory Domain Services
 
 ### 🔑 Gestion des Objets AD
-- **[Repair-WBADObjectsOwner.ps1](/PowerShell/Scripts/Repair-WBADObjectsOwner/Repair-WBADObjectsOwner.ps1)** : Corrige les propriétaires incorrects des objets dans Active Directory. [Read More](/PowerShell/Documentation/Repair-WBADObjectsOwner/ReadMe.md)
-- **[Repair-WBADSysvolFilesOwner.ps1](/PowerShell/Scripts/Repair-WBADSysvolFilesOwner/Repair-WBADSysvolFilesOwner.ps1)** : Répare les permissions et les propriétaires des fichiers dans le dossier SYSVOL. [Read More](/PowerShell/Documentation/Repair-WBADSysvolFilesOwner/ReadMe.md) 
+| Script | Description 
+| -- | -- | 
 
-### 💾 Sauvegarde
-
-### 🚨 Gestion des Alertes
 
 ### 👤 Gestion des Comptes
-- **[Add-CompagnyUsers.ps1](/PowerShell/Scripts/Add-CompagnyUsers/Add-CompagnyUsers.ps1)** : Créer des utilisateurs dans Active Directory a l'aide d'un fichier CSV. [Read More](/PowerShell/Documentation/Add-CompagnyUsers/ReadMe.md) 
-
-- **[Check-WBDisabledUsersTime.ps1](/PowerShell/Scripts/Check-WBDisabledUsersTime/Check-WBDisabledUsersTime.ps1)** : Ce script vérifie les utilisateurs désactivés dans Active Directory pour générer un rapport sur les utilisateurs désactivés depuis longtemps ou ceux sans informations de désactivation [Read More](/PowerShell/Documentation/Check-WBDisabledUsersTime/ReadMe.md)
-
-- **[Disable-WBInactiveUsers.ps1](/PowerShell/Scripts/Disable-WBInactiveUsers/Disable-WBInactiveUsers.ps1)** : Vérifie et désactive automatiquement les utilisateurs dans Active Directory en fonction de critères tels que l'expiration des mots de passe ou l'inactivité. [Read More](/PowerShell/Documentation/Disable-WBInactiveUsers/ReadMe.md) 
+| Script | Description 
+| -- | -- | 
+| **[Add-CompagnyUsers.ps1](/PowerShell/Scripts/Add-CompagnyUsers/Add-CompagnyUsers.ps1)** | Créer des utilisateurs dans Active Directory a l'aide d'un fichier CSV. [Read More](/PowerShell/Documentation/Add-CompagnyUsers/ReadMe.md) |
+| **[Check-WBDisabledUsersTime.ps1](/PowerShell/Scripts/Check-WBDisabledUsersTime/Check-WBDisabledUsersTime.ps1)** | Ce script vérifie les utilisateurs désactivés dans Active Directory pour générer un rapport sur les utilisateurs désactivés depuis longtemps ou ceux sans informations de désactivation [Read More](/PowerShell/Documentation/Check-WBDisabledUsersTime/ReadMe.md)|
+| **[Disable-WBInactiveUsers.ps1](/PowerShell/Scripts/Disable-WBInactiveUsers/Disable-WBInactiveUsers.ps1)** | Vérifie et désactive automatiquement les utilisateurs dans Active Directory en fonction de critères tels que l'expiration des mots de passe ou l'inactivité. [Read More](/PowerShell/Documentation/Disable-WBInactiveUsers/ReadMe.md) |
 
 ### 🔒 Sécurité
-- **[Run-WBPingCastle.ps1](/PowerShell/Scripts/Run-WBPingCastle/Run-WBPingCastle.ps1)** : Automatisation des analyses PingCastle pour détecter et corriger les vulnérabilités de sécurité dans Active Directory. [Read More](/PowerShell/Documentation/Run-WBPingCastle/ReadMe.md)
-- **[Check-BitLocker.ps1](/PowerShell/Scripts/Check-BitLocker/Check-BitLocker.ps1)** : Vérifie l'état de BitLocker sur les ordinateurs. [Read More](/PowerShell/Documentation/Check-BitLocker/ReadMe.md)
+| Script | Description 
+| -- | -- | 
+| **[Repair-WBADObjectsOwner.ps1](/PowerShell/Scripts/Repair-WBADObjectsOwner/Repair-WBADObjectsOwner.ps1)** | Répare les propriétaires des objets Active Directory qui ont des configurations incorrectes. [Read More](/PowerShell/Documentation/Repair-WBADObjectsOwner/ReadMe.md) |
+| **[Repair-WBADSysvolFilesOwner.ps1](/PowerShell/Scripts/Repair-WBADSysvolFilesOwner/Repair-WBADSysvolFilesOwner.ps1)** | Corrige les problèmes de permissions ou de propriétaires sur les fichiers SYSVOL. [Read More](/PowerShell/Documentation/Repair-WBADSysvolFilesOwner/ReadMe.md) |
+| **[Run-WBPingCastle.ps1](/PowerShell/Scripts/Run-WBPingCastle/Run-WBPingCastle.ps1)** | Le script automatise l'exécution de l'outil PingCastle pour générer un rapport de vérification de l'état de Active Directory. [Read More](/PowerShell/Documentation/Run-WBPingCastle/ReadMe.md)|
+| **[Check-WBBitLocker.ps1](/PowerShell/Scripts/Check-WBBitLocker/Check-WBBitLocker.ps1)** | Vérifie l'état de BitLocker des ordinateurs dans Active Directory et genere un rapport pour les clés de récupération manquantes. [Read More](/PowerShell/Documentation/Check-WBBitLocker/ReadMe.md)|
 
-## 🏢 Active Directory Certificats Services
-
-### 🛡️ Gestion des Certificats
-- Automatisation des processus de gestion des certificats pour les services AD CS.
-
-## 🖥️ Windows Servers
-
-### 🛡️ Gestion des Certificats
-- Scripts dédiés à la gestion des certificats sur les serveurs Windows pour garantir leur conformité et sécurité.
 
 ## ☁️ Azure
 
-### 🛡️ Autre
-- **[Start-ConnectTenant.ps1](/PowerShell/Scripts/Start-ConnectTenant/Start-ConnectTenant.ps1)** : Établit et gère la connexion au locataire Microsoft. [Read More](/PowerShell/Documentation/Start-ConnectTenant/ReadMe.md)
-- **[Check-AADLastSynchronisation.ps1](/PowerShell/Scripts/Check-AADLastSynchronisation/Check-AADLastSynchronisation.ps1)** : Vérifie la dernière synchronisation Azure AD. [Read More](/PowerShell/Documentation/Check-AADLastSynchronisation/ReadMe.md) 
-- **[Check-AzureAppsCredExpiration.ps1](/PowerShell/Scripts/Check-AzureAppsCredExpiration/Check-AzureAppsCredExpiration.ps1)** : Vérifie les dates d'expiration des informations d'identification des applications Azure. [Read More](/PowerShell/Documentation/Check-AzureAppsCredExpiration/ReadMe.md) 
-  
-- **[.Template-MsGraph.ps1](/PowerShell/Scripts/.Template-MsGraph/.Template-MsGraph.ps1)** : Modèle de script pour interagir avec l'API Microsoft Graph. [Read More](/PowerShell/Documentation/.Template-MsGraph/ReadMe.md) 
+### 🛡️ Administration
+| Script | Description 
+| -- | -- | 
+| **[Start-WBConnectTenant.ps1](/PowerShell/Scripts/Start-WBConnectTenant/Start-WBConnectTenant.ps1)** | Se connecte à un tenant de l'API Microsoft Graph et fournit une interface basée sur un menu pour interagir avec le tenant. Il est possible de rester connecté afin d'exécuter des commandes supplémentaires. [Read More](/PowerShell/Documentation/Start-WBConnectTenant/ReadMe.md)|
+| **[Check-WBAzureAppsCredExpiration.ps1](/PowerShell/Scripts/Check-WBAzureAppsCredExpiration/Check-WBAzureAppsCredExpiration.ps1)** | Vérifie et rapporte l'état d'expiration des identifiants des applications Azure et envoie des alertes par e-mail pour les identifiants expirés ou arrivant à expiration. [Read More](/PowerShell/Documentation/Check-WBAzureAppsCredExpiration/ReadMe.md) |
 
-- **[Check-MailBoxSize.ps1](/PowerShell/Scripts/Check-MailBoxSize/Check-MailBoxSize.ps1)** : Vérifie la taille des boîtes aux lettres. [Read More](/PowerShell/Documentation/Check-MailBoxSize/ReadMe.md) 
+
+### 🌐 Hybride
+| Script | Description 
+| -- | -- | 
+| **[Check-WBAADLastSynchronisation.ps1](/PowerShell/Scripts/Check-WBAADLastSynchronisation/Check-WBAADLastSynchronisation.ps1)** | Vérifie l'état de synchronisation d'Azure AD et envoie des alertes en cas de rupture ou d'interruption. [Read More](/PowerShell/Documentation/Check-WBAADLastSynchronisation/ReadMe.md) |
+
+
+### 💼 Office 365
+| Script | Description 
+| -- | -- | 
+| **[Check-WBMailBoxSize.ps1](/PowerShell/Scripts/Check-WBMailBoxSize/Check-WBMailBoxSize.ps1)** | Vérifie la taille des boîtes aux lettres des utilisateurs et envoie des alertes par e-mail pour celles dépassant un seuil spécifié. [Read More](/PowerShell/Documentation/Check-WBMailBoxSize/ReadMe.md)| 
+
+
+### 📂 Autres
+| Script | Description 
+| -- | -- | 
+| **[.Template-MsGraph.ps1](/PowerShell/Scripts/.Template-MsGraph/.Template-MsGraph.ps1)** | Modèle de script pour interagir avec l'API Microsoft Graph. [Read More](/PowerShell/Documentation/.Template-MsGraph/ReadMe.md) |
 
 ---
 

@@ -64,16 +64,20 @@
     https://github.com/Webi-Time/WBScripts/blob/main/PowerShell/Scripts/Repair-WBADSysvolFilesOwner/Repair-WBADSysvolFilesOwner.ps1
 
 .NOTES
-    Author: Damien Aubril
-    License: Not applicable
-    Version: 1.0
-    Date: January 12, 2025
-
     Additional Notes:
-    - Ensure the required PowerShell modules (ModuleGenerics, ActiveDirectory) are installed and accessible.
+    
+    Ensure the required PowerShell modules (ModuleGenerics, ActiveDirectory) are installed and accessible.
+        
+    Author: Damien Aubril
+
+    >License: Not applicable
+
+    >Date: January 12, 2025
+    
+    Version: 1.0
     
     Change Log :
-        Update - 13/01/2024
+        - Update - 13/01/2024
 #>
 
 [cmdletbinding()]
@@ -116,7 +120,7 @@ Begin
             # Get the date in "yyyy-MM-dd-HH-mm-ss" format for log files
                 [string]$global:Date_Logs_File = Get-Date -Format "yyyy-MM-dd-HH-mm-ss"
                 $global:VerboseLvl             = $VerboseLvl
-        #endregion Script Variables
+        #endregion
         
         #region Modules
 
@@ -131,7 +135,7 @@ Begin
                 Write-host $_.Exception.Message
                 exit -1
             }            
-        #endregion Modules
+        #endregion
 
         #region JSON Config
             # Path to JSON configuration files
@@ -151,14 +155,14 @@ Begin
                 [PSCustomObject]$ExcludeGroups  = $Script_Param.ExcludeGroups 
                 [string]$HTMLTemplatePath  = $Script_Param.TemplateHTMLPath
 
-        #endregion JSON Config
+        #endregion
 
         #region Variables Global
 
             $Global:Analyse = $false
             $Global:Power = $false
 
-        #endregion Variables
+        #endregion
 
         #region Script Functions
 
@@ -236,14 +240,14 @@ Begin
             
         }
 
-        #endregion Script Functions
+        #endregion
 
         #region Initialisation
 
             # Calculate the space used by log and result folders and check if it's within the specified limit
             $SpaceUsed = Test-SpaceFolders ($global:Path_Logs,$Path_Result) $FilesToKeep $SpaceMax
             Log "Script" "$ScriptName - Use $SpaceUsed of $(WSize $SpaceMax) limit" 2 Cyan
-        #endregion Initialisation
+        #endregion
     }
     catch 
     {
@@ -322,7 +326,7 @@ Process
                 Throw $_
             }
 
-        #endregion Prerequisites
+        #endregion
 
         #region Recuperation des groupes par defaut Active Directory
 
@@ -383,7 +387,7 @@ Process
             }
         }
             
-        #endregion   
+        #endregion 
 
         #region Selection du nouveau Owner pour les dossiers/fichiers du SYSVOL
         
@@ -492,7 +496,7 @@ Process
                 Get-DebugError $_
             }
         }
-        #endregion  
+        #endregion
        
         #region CreateHTML
             $html = $null
@@ -573,7 +577,7 @@ Process
             $html = $html -replace "<td>Insuficient", "<td style='background-color: Yellow;'>Insufficient"
             $html = $html -replace "<td>Not", "<td style='background-color: Aqua;'>Not"
             $html = $html -replace "<table>", "<table class='RepportUser'>"
-        #endregion Createhtml
+        #endregion
         
         #region Sending an email if disabled users without account deactivation information are found
         # Currently without email sending, please refer to the documentation on how to add email sending

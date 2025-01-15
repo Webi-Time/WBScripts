@@ -1,6 +1,7 @@
 ﻿# The *Check-WBDisabledUsersTime.ps1* PowerShell Script
 
-The script retrieves all disabled user accounts from Active Directory within the specified Organizational Unit (OU). It checks if the user has been disabled 
+The script retrieves all disabled user accounts from Active Directory within the specified Organizational Unit (OU). It checks if the user has been 
+disabled 
 for a period longer than a specified threshold (defined by `$nbdayDelete`). 
     - Users disabled without any deactivation information are logged.
     - Users that have been disabled for more than the specified number of days are marked for deletion.
@@ -8,8 +9,7 @@ for a period longer than a specified threshold (defined by `$nbdayDelete`).
 
 # Syntax
 ```powershell
-.\Check-WBDisabledUsersTime.ps1 [[-VerboseLvl] <Byte>] [[-Domain] <String>] [[-ResultPath] 
-<String>] [<CommonParameters>]
+.\Check-WBDisabledUsersTime.ps1 [[-VerboseLvl] <Byte>] [[-Domain] <String>] [[-ResultPath] <String>] [<CommonParameters>]
 ```
 
 This script supports the common parameters: Verbose, Debug, ErrorAction, ErrorVariable, WarningAction, 
@@ -60,12 +60,12 @@ WarningVariable, OutBuffer, PipelineVariable, and OutVariable.
 - https://github.com/Webi-Time/WBScripts/blob/main/PowerShell/Scripts/Check-WBDisabledUsersTime/Check-WBDisabledUsersTime.ps1
 # Prerequisite
 - ## Modules
-	- Ensure the **ModuleGenerics** module is installed. More information [How to install **ModuleGenerics**](/PowerShell/README.md)
+	- Ensure the **ModuleGenerics** module is installed. More information [How to install **ModuleGenerics**](/PowerShell/ReadMe-Modules-Installation.md)
 
 
 - ## Parameters
 
-This JSON file contains configurations for a script. It is structured into three sections: Generic, Tenant and Script. Find more explanation [here](/PowerShell/README.md)
+This JSON file contains configurations for a script. It is structured into three sections: Generic, Tenant and Script. Find more explanation [here](/PowerShell/ReadMe-JSON-File.md)
 
 # Example
 
@@ -83,3 +83,24 @@ PS>  .\Check-WBDisabledUsersTime.ps1 -VerboseLvl 2 -Domain OtherDomain.tld
 
 Runs the script with detailed logging on domain 'OtherDomain.tld'.
 ```
+
+## Notes
+Additional Notes:
+
+Ensure the required PowerShell modules (ModuleGenerics, ActiveDirectory) are installed and accessible.
+
+>Author: Damien Aubril
+
+>License: Not applicable
+
+>Date: December 12, 2025
+
+
+>Version: 1.0
+
+Change Log :
+- Update - 12/12/2024
+
+# Execution
+<img src='Check-WBDisabledUsersTime-Execution.png' alt='Check-WBDisabledUsersTime-Execution' width='auto' height='auto' />
+

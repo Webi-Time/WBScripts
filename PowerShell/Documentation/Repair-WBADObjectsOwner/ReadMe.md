@@ -7,8 +7,7 @@ It generates an HTML page, and a CSV if the parameter has been specified.
 
 # Syntax
 ```powershell
-.\Repair-WBADObjectsOwner.ps1 [[-VerboseLvl] <Byte>] [[-Domain] <String>] [[-GPOwner] <String>] 
-[[-rootPath]] [[-OUPath] <String>] [[-Repair]] [[-RepairAll]] [[-ResultPath] <String>] [<CommonParameters>]
+.\Repair-WBADObjectsOwner.ps1 [[-VerboseLvl] <Byte>] [[-Domain] <String>] [[-GPOwner] <String>] [[-rootPath]] [[-OUPath] <String>] [[-Repair]] [[-RepairAll]] [[-ResultPath] <String>] [<CommonParameters>]
 ```
 
 This script supports the common parameters: Verbose, Debug, ErrorAction, ErrorVariable, WarningAction, 
@@ -84,7 +83,8 @@ WarningVariable, OutBuffer, PipelineVariable, and OutVariable.
 ```
 ```powershell
 -RepairAll [<SwitchParameter>]
-     If specified, the script will attempt to repair all AD Object their ownership is not equal to desired owner. This includes both broken and correctly owned files.
+     If specified, the script will attempt to repair all AD Object their ownership is not equal to desired owner. This includes both broken and 
+    correctly owned files.
     
     Obligatoire :                         false
     Position :                            7
@@ -110,12 +110,12 @@ WarningVariable, OutBuffer, PipelineVariable, and OutVariable.
 - https://github.com/Webi-Time/WBScripts/blob/main/PowerShell/Scripts/Repair-WBADObjectsOwner/Repair-WBADObjectsOwner.ps1
 # Prerequisite
 - ## Modules
-	- Ensure the **ModuleGenerics** module is installed. More information [How to install **ModuleGenerics**](/PowerShell/README.md)
+	- Ensure the **ModuleGenerics** module is installed. More information [How to install **ModuleGenerics**](/PowerShell/ReadMe-Modules-Installation.md)
 
 
 - ## Parameters
 
-This JSON file contains configurations for a script. It is structured into three sections: Generic, Tenant and Script. Find more explanation [here](/PowerShell/README.md)
+This JSON file contains configurations for a script. It is structured into three sections: Generic, Tenant and Script. Find more explanation [here](/PowerShell/ReadMe-JSON-File.md)
 
 # Example
 
@@ -139,3 +139,24 @@ PS>  .\Repair-WBADObjectsOwner.ps1 -Repair -RepairAll -ResultPath "C:\Reports\SY
 
 Attempts to repair all files and folders in SYSVOL, including those with correct ownership, and saves the report to the specified path.
 ```
+
+## Notes
+Additional Notes:
+
+Ensure the required PowerShell modules (ModuleGenerics, ActiveDirectory) are installed and accessible.
+
+>Author: Damien Aubril
+
+>License: Not applicable
+
+>Date: January 12, 2025
+
+
+>Version: 1.0
+
+Change Log :
+- Update - 13/01/2024
+
+# Execution
+<img src='Repair-WBADObjectsOwner-Execution.png' alt='Repair-WBADObjectsOwner-Execution' width='auto' height='auto' />
+

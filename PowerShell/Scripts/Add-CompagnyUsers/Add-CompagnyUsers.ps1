@@ -63,9 +63,8 @@ Param
 
 Begin
 {
-#region Begin
-
-    try{
+    try
+    {
         Clear-Host
         $StartScript = Get-Date
         if($VerboseLvl -ne 0){Write-host "$(Get-Date -f 'dd/MM/yyyy HH:mm:ss') - Script start : " -f Cyan -NoNewline; Write-host "[$($MyInvocation.MyCommand.Name)]" -f Red}
@@ -89,7 +88,7 @@ Begin
             # Get the date in "yyyy-MM-dd-HH-mm-ss" format for log files
                 [string]$global:Date_Logs_File = Get-Date -Format "yyyy-MM-dd-HH-mm-ss"
                         $global:VerboseLvl = $VerboseLvl
-        #endregion Script Variables
+        #endregion
 
         #region JSON Config
 
@@ -113,7 +112,7 @@ Begin
 
                 $File_PassWord  = $Path_Result + "TmpPassword.txt"  # Chemin vers le fichier des mots de passe des utilisateurs créés
     
-        #endregion JSON Config
+        #endregion
 
         #region Modules
             
@@ -128,7 +127,7 @@ Begin
                 exit 1
             }
 
-        #endregion Modules
+        #endregion
 
         #region function
        
@@ -201,7 +200,7 @@ Begin
                 }
             }
         
-        #endregion function
+        #endregion
 
         
         #region Script Prerequisites
@@ -222,7 +221,7 @@ Begin
             $SpaceUsed = Test-SpaceFolders ($global:Path_Logs,$Path_Result) $FilesToKeep $SpaceMax
             Log "Script" "$ScriptName - use $SpaceUsed of $(WSize $SpaceMax) limit" 2 Cyan
 
-        #endregion Prerequisites
+        #endregion
         
     }
     catch 
@@ -230,13 +229,9 @@ Begin
         Get-DebugError $_
         exit 1
     }
-    
-
-#endregion Begin
 }
 Process
 {
-#region Process
     try 
     {
         Log "Script" "Start of script : $($MyInvocation.MyCommand.Name)" 99 Cyan  
@@ -361,16 +356,14 @@ Process
             }
         }
     }
-    catch {
+    catch 
+    {
         Get-DebugError $_
         exit 1
     }
-#endregion Process
 }
-
 End
 {
-#region End
     try{
        
         $Temps = ((Get-Date )-(Get-Date $StartScript)).ToString().Split('.')[0]
@@ -383,5 +376,4 @@ End
         Get-DebugError $_
         exit 1
     }
-#endregion End
 }

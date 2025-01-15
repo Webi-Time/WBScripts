@@ -33,6 +33,9 @@
     PS> .\Run-WBPingCastle.ps1 -ResultPath "C:\PingCastleResult"
     Runs the script and save PingCastle repport in specified directory
 
+.INPUTS
+    JSON File
+
 .OUTPUTS
     The script generates:
     - HTML files containing the PingCastle report.
@@ -43,17 +46,22 @@
     https://github.com/Webi-Time/WBScripts/blob/main/PowerShell/Scripts/Run-WBPingCastle/Run-WBPingCastle.ps1
 
 .NOTES
-    Author: Damien Aubril
-    License: Not applicable
-    Version: 1.0
-    Date: December 4, 2024
-
     Additional Notes:
-    - Ensure the PingCastle tool is placed in the script's root directory before execution.
-    - Ensure the required PowerShell modules (ModuleGenerics, ActiveDirectory) are installed and accessible.
+    
+    Ensure the PingCastle tool is placed in the script's root directory before execution.
+
+    Ensure the required PowerShell modules (ModuleGenerics, ActiveDirectory) are installed and accessible.
+
+    Author: Damien Aubril
+
+    >License: Not applicable
+
+    >Date: December 4, 2024
+    
+    Version: 1.0
 
     Change Log :
-        Update - 12/12/2024
+        - Update - 12/12/2024
 #>
 
 
@@ -62,7 +70,7 @@
 Param
 (
     [Parameter(Mandatory = $false, Position = 0)][ValidateSet(0, 1, 2, 3, 4, 5)][byte]$VerboseLvl = 2,
-    [Parameter(Mandatory = $false, Position = 1)][string]$Domain = (Get-ADDomain).DNSRoot,
+    [Parameter(Mandatory = $false, Position = 1)][string]$Domain,
     [Parameter(Mandatory = $false, Position = 2)][string]$ResultPath = $null
 )
 
@@ -92,7 +100,7 @@ Begin
             # Get the date in "yyyy-MM-dd-HH-mm-ss" format for log files
                 [string]$global:Date_Logs_File = Get-Date -Format "yyyy-MM-dd-HH-mm-ss"
                 $global:VerboseLvl             = $VerboseLvl
-        #endregion Script Variables
+        #endregion
 
         #region Modules
 
@@ -107,7 +115,7 @@ Begin
                 Write-host $_.Exception.Message
                 exit -1
             }
-        #endregion Modules
+        #endregion
 
         #region JSON Config
             # Path to JSON configuration files
@@ -126,22 +134,22 @@ Begin
             # Get configuration values for Script Variable
                 [string]$PingCastleVersion = $Script_Param.PingCastleVersion
                 [string]$HTMLTemplatePath  = $Script_Param.TemplateHTMLPath
-        #endregion JSON Config
+        #endregion
 
         #region Variables Global
         
-        #endregion Variables
+        #endregion
 
         #region Script Functions
 
-        #endregion Script Functions
+        #endregion
      
         #region Initialisation
 
             # Calculate the space used by log and result folders and check if it's within the specified limit
             $SpaceUsed = Test-SpaceFolders ($global:Path_Logs,$Path_Result) $FilesToKeep $SpaceMax
             Log "Script" "$ScriptName - Use $SpaceUsed of $(WSize $SpaceMax) limit" 2 Cyan
-        #endregion Initialisation
+        #endregion
     }
     catch 
     {
@@ -155,6 +163,32 @@ Process
     {
         #region Checking the presence of PingCastle binaries (.exe) in the desired version
         Log "Script" "Checking the 'PingCastle' utility" 1 Cyan
+        #region Verification du domaine
+        Log "Script" "Verification du nom de domaine" 1 Magenta
+        try 
+        {
+            # Si le paramatre -Domain est spécifié 
+            if (-not [string]::IsNullOrEmpty($Domain))
+            {
+                Log "Script" "`tRecuperation des informations du domaine : [$Domain]" 1 DarkMagenta
+                $Dom = Get-ADDomain -Server $Domain -ErrorAction Stop
+            }
+            # Sinon on prends le domaine actuel
+            else
+            {
+                Log "Script" "`tRecuperation des informations du domaine : [$($env:USERDNSDOMAIN)]" 1 DarkMagenta
+                $Dom = Get-ADDomain -Server $env:USERDNSDOMAIN -ErrorAction Stop
+            }       
+            $DomainDNSName = ($Dom).DNSRoot
+            
+        }
+        catch 
+        {
+            Log "Script" "`tImpossible recuperer les informations du domaine" 1 Red
+            Get-DebugError $_
+            exit -1
+        }
+
         $PingCastleFolder = $null
         $PingCastleGoodFolder = $null
         
@@ -186,11 +220,11 @@ Process
             Set-Location $PingCastleGoodFolder.FullName
             Log "Script" "Start PingCastle version $($PingCastleGoodFolder.Version)" 1 Green     
             try {
-                Get-ADDomain -Server $Domain -ErrorAction Stop | Out-Null
-                . "$($PingCastleGoodFolder.FullName)\PingCastle.exe" --no-enum-limit --healthcheck --server $Domain
+                
+                . "$($PingCastleGoodFolder.FullName)\PingCastle.exe" --no-enum-limit --healthcheck --server $DomainDNSName
             }
             catch {
-                Log "Script","Error" "An error occure during PingCastle execution. Domain : $Domain" 1 Red
+                Log "Script","Error" "An error occure during PingCastle execution. Domain : $DomainDNSName" 1 Red
                 Get-DebugError $_
             }      
             
@@ -205,7 +239,7 @@ Process
 
         #region Moving the file generated by PingCastle to the Result folder
         [string[]]$PingCastleRepport = $null
-        foreach ($report in $(Get-Item "$($PingCastleGoodFolder.FullName)\*$Domain*" | Select-Object FullName,Extension)){
+        foreach ($report in $(Get-Item "$($PingCastleGoodFolder.FullName)\*$DomainDNSName*" | Select-Object FullName,Extension)){
             #Rename file with date
             $rp = $report.FullName -replace "$($report.Extension)","_$(Get-Date -Format "yyyy_MM_dd_hh_mm")$($report.Extension)"
             Move-Item $($report.FullName) $Path_Result$(split-path $rp -leaf) -force
@@ -253,7 +287,7 @@ Process
             Log "Script" "Generated file [$Path_Result\$($Date_Logs_File)_PingCastleRepport.html])" 1 Yellow
             #Attachment = $PingCastleRepport
         }
-        #endregion        
+        #endregion
     }
     catch 
     {

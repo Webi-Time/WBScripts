@@ -44,16 +44,20 @@
 
 
 .NOTES
-    Author: Damien Aubril
-    License: Not applicable
-    Version: 1.0
-    Date: December 12, 2024
-
     Additional Notes:
-    - Ensure the required PowerShell modules (ModuleGenerics, ActiveDirectory) are installed and accessible.
+    
+    Ensure the required PowerShell modules (ModuleGenerics, ActiveDirectory) are installed and accessible.
+        
+    Author: Damien Aubril
 
+    >License: Not applicable
+
+    >Date: December 12, 2025
+    
+    Version: 1.0
+    
     Change Log :
-        Update - 12/12/2024
+        - Update - 12/12/2024
 #>
 
 
@@ -91,7 +95,7 @@ Begin
             # Get the date in "yyyy-MM-dd-HH-mm-ss" format for log files
                 [string]$global:Date_Logs_File = Get-Date -Format "yyyy-MM-dd-HH-mm-ss"
                 $global:VerboseLvl             = $VerboseLvl
-        #endregion Script Variables
+        #endregion
 
         #region Modules
             
@@ -106,7 +110,7 @@ Begin
                 Write-host $_.Exception.Message
                 exit -1
             }            
-        #endregion Modules
+        #endregion
 
         #region JSON Config
             # Path to JSON configuration files
@@ -130,22 +134,22 @@ Begin
         
                 [int]$nbdayDelete           = $Script_Param.DayBeforeDelete
                 [string[]]$ExcludedAccounts = $Script_Param.ExcludedAccounts
-        #endregion JSON Config
+        #endregion
 
         #region Variables Global
         
-        #endregion Variables
+        #endregion
 
         #region Script Functions
 
-        #endregion Script Functions
+        #endregion
 
         #region Initialisation
 
             # Calculate the space used by log and result folders and check if it's within the specified limit
             $SpaceUsed = Test-SpaceFolders ($global:Path_Logs,$Path_Result) $FilesToKeep $SpaceMax
             Log "Script" "$ScriptName - Use $SpaceUsed of $(WSize $SpaceMax) limit" 2 Cyan
-        #endregion Initialisation
+        #endregion
     }
     catch 
     {

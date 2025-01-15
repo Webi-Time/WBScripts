@@ -47,16 +47,18 @@
     https://github.com/Webi-Time/WBScripts/blob/main/PowerShell/Scripts/Disable-WBInactiveUsers/Disable-WBInactiveUsers.ps1
 
 .NOTES
-    Author: Damien Aubril
-    License: Not applicable
-    Version: 1.0
-    Date: December 12, 2024
-
     Additional Notes:
-    - Ensure the required PowerShell modules (ModuleGenerics, ActiveDirectory) are installed and accessible.
+    
+    Ensure the required PowerShell modules (ModuleGenerics, ActiveDirectory) are installed and accessible.
+        
+    Author: Damien Aubril
 
-    Change Log :
-        Update - 12/12/2024
+    >License: Not applicable
+
+    >Date: December 12, 2025
+    
+    Version: 1.0
+
 #>
 
 
@@ -66,7 +68,7 @@
 Param
 (
     [Parameter(Mandatory = $false, Position = 0)][ValidateSet(0, 1, 2, 3, 4, 5)][byte]$VerboseLvl = 2,
-    [Parameter(Mandatory = $false, Position = 1)][string]$Domain        = (Get-ADDomain).DNSRoot,
+    [Parameter(Mandatory = $false, Position = 1)][string]$Domain,
     [Parameter(Mandatory = $false, Position = 2)][switch]$PasswordCheck = $false,
     [Parameter(Mandatory = $false, Position = 3)][switch]$InactiveCheck = $false,
     [Parameter(Mandatory = $false, Position = 4)][switch]$WhatIf        = $false,
@@ -99,7 +101,7 @@ Begin
             # Get the date in "yyyy-MM-dd-HH-mm-ss" format for log files
                 [string]$global:Date_Logs_File = Get-Date -Format "yyyy-MM-dd-HH-mm-ss"
                 $global:VerboseLvl             = $VerboseLvl
-        #endregion Script Variables
+        #endregion 
 
         #region Modules
             
@@ -114,7 +116,7 @@ Begin
                 Write-host $_.Exception.Message
                 exit -1
             }            
-        #endregion Modules
+        #endregion
 
         #region JSON Config
             # Path to JSON configuration files
@@ -145,22 +147,22 @@ Begin
                     $DayBeforeInactive = 180
                 }
 
-        #endregion JSON Config
+        #endregion
 
         #region Variables Global
 
-        #endregion Variables Global
+        #endregion
 
         #region Script Functions
 
-        #endregion Script Functions
+        #endregion
 
         #region Initialisation
-
+            Show-Param -LesParam $PSBoundParameters
             # Calculate the space used by log and result folders and check if it's within the specified limit
             $SpaceUsed = Test-SpaceFolders ($global:Path_Logs,$Path_Result) $FilesToKeep $SpaceMax
             Log "Script" "$ScriptName - Use $SpaceUsed of $(WSize $SpaceMax) limit" 2 Cyan
-        #endregion Initialisation
+        #endregion
     }
     catch 
     {
@@ -440,8 +442,3 @@ End
         exit -1
     }
 }
-
-
-
-
-
