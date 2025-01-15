@@ -66,7 +66,8 @@ PS> .\Check-WBBitLocker.ps1 -VerboseLvl 2
 ```
 
 ## Notes
-Ensure the [ModuleGenerics] module is installed 
+Additional Notes:
+Ensure the required PowerShell modules (ModuleGenerics, ActiveDirectory) are installed and accessible.
 
 
 >Author: Damien Aubril

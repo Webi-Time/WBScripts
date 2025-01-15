@@ -30,7 +30,8 @@
     https://github.com/Webi-Time/WBScripts/blob/main/PowerShell/Scripts/Check-WBBitLocker/Check-WBBitLocker.ps1
 
 .NOTES
-    Ensure the [ModuleGenerics] module is installed 
+    Additional Notes:
+    Ensure the required PowerShell modules (ModuleGenerics, ActiveDirectory) are installed and accessible.
 
 
     Author: Damien Aubril

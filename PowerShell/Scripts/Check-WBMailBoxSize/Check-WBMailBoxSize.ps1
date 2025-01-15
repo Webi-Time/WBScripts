@@ -29,12 +29,13 @@
 
 .NOTES
     Additional Notes:
-    Ensure the required PowerShell modules (ModuleGenerics, ActiveDirectory) are installed and accessible.
+    Ensure the required PowerShell modules (ModuleGenerics) are installed and accessible.
      
     Ensure you have the necessary permissions to access Azure AD data.
     
     Ensure that the App Registration is granted the following permissions:
         - Microsoft Graph -> Mail.send
+        - Microsoft Graph -> Reports.Read.All
       
     Author: Damien Aubril
 
