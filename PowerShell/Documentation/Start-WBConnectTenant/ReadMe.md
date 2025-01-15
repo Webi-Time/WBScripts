@@ -56,7 +56,7 @@ WarningVariable, OutBuffer, PipelineVariable, and OutVariable.
 - ## Modules
 	- Ensure the **ModuleGenerics** module is installed. More information [How to install **ModuleGenerics**](/PowerShell/ReadMe-Modules-Installation.md)
 
-	- The script use function for download and upgrade Microsoft Graph Modules, but you can fixe the module version with **$GraphModulesVrs** variable
+	- The script use function for download and upgrade Microsoft Graph Modules, but you can fix the module version with **$GraphModulesVrs** variable
 <p align='center'>
 <img src='/Datas/Images/FixMsGraphModuleVersion.png' alt='FixMsGraphModuleVersion' width='auto' height='auto' />
 </p>

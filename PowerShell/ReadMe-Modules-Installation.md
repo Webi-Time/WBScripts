@@ -27,7 +27,7 @@ New-Item -Path "C:\WINDOWS\system32\WindowsPowerShell\v1.0\Modules\ModuleGeneric
 # Ou, pour un chemin local
 New-Item -Path "C:\WINDOWS\system32\WindowsPowerShell\v1.0\Modules\ModuleGenerics" -ItemType SymbolicLink -Target '\<Chemin Local>\ModuleGenerics\'
 ```
-⚠️ **Attention** : Vous devez disposer de droits administratifs pour créer des **liens symboliques**, peut importe le repertoire.
+⚠️ **Attention** : Vous devez disposer de droits administratifs pour créer des **liens symboliques**, peu importe le repertoire.
 
 ### 👤 Lien Symbolique pour un Utilisateur Unique
 Pour que le module soit disponible uniquement pour un utilisateur spécifique, utilisez la commande suivante :
