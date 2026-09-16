@@ -2027,6 +2027,10 @@ function createWebiTimeSharedUi() {
                 font-size: var(--webi-font-small);
                 font-variant-numeric: tabular-nums;
             }
+            #twcheese_pillaging_stats .wtri-table th {
+            background:inherit !important;
+            }
+
 
             /*
              * Le CSS natif de Guerre Tribale applique notamment :
