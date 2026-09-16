@@ -1,9 +1,0 @@
-{
-    "Generic":  {
-                    "FilesToKeep":  500,
-                    "SpaceToUseByScriptsMax":  "10MB"
-                },
-    "Script":  {
-                   "CSVPath":  ".\\NewUsersCSV.csv"
-               }
-}
