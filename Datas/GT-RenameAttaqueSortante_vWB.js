@@ -25,24 +25,82 @@ var forceRename = true;
 
 const WEBITIME_RENAME_NAME = 'Webi-Time Rename Attaques';
 const WEBITIME_RENAME_AUTHOR = 'NoLife4Ever';
-const WEBITIME_RENAME_VERSION = '1.11'; // CSS/UI partagés via WebiTime_GT_Common.js
+const WEBITIME_RENAME_VERSION = '1.13'; // CSS/UI partagés via WebiTime_GT_Common.js
 const WEBITIME_RENAME_STYLE_ID = 'webiTimeRenameAttackStyle';
 const WEBITIME_SOURCE_URL = 'https://github.com/Webi-Time/WBScripts/tree/GT/Datas';
+const WEBITIME_COMMON_URL = 'https://webi-time.github.io/WBScripts/Datas/WebiTime_GT_Common.js';
+const WEBITIME_COMMON_FALLBACK_URL = 'https://cdn.jsdelivr.net/gh/Webi-Time/WBScripts@GT/Datas/WebiTime_GT_Common.js';
+const WEBITIME_RENAME_SCRIPT_SRC = (document.currentScript && document.currentScript.src) || '';
 
+let WEBITIME_UI = null;
+let WEBITIME_RENAME_GITHUB_ISSUES_URL = '';
+let webiTimeCommonLoading = null;
 
-
-const WEBITIME_UI = window.WebiTimeGT;
-if (!WEBITIME_UI) {
-    console.error('[Webi-Time Rename Attaques] WebiTime_GT_Common.js doit être chargé avant ce script.');
-    if (typeof UI !== 'undefined' && UI.ErrorMessage) {
-        UI.ErrorMessage('Le composant Webi-Time commun n’est pas chargé.');
+// Charge automatiquement le composant commun si le raccourci ne l'a pas déjà fait.
+// Essaie d'abord le même dossier que ce script, puis GitHub Pages, puis jsDelivr sur la branche GT.
+function ensureWebiTimeCommon() {
+    if (window.WebiTimeGT) {
+        WEBITIME_UI = window.WebiTimeGT;
+        WEBITIME_UI.injectStyles();
+        WEBITIME_RENAME_GITHUB_ISSUES_URL = WEBITIME_UI.buildIssueUrl('GT-RenameAttaqueSortante', WEBITIME_SOURCE_URL);
+        return Promise.resolve(WEBITIME_UI);
     }
-    throw new Error('WebiTime_GT_Common.js non chargé');
+
+    if (webiTimeCommonLoading) return webiTimeCommonLoading;
+
+    webiTimeCommonLoading = (async function () {
+        const candidates = [];
+
+        // 1) Même dossier que le script courant : évite les problèmes de branche / chemin Pages.
+        try {
+            if (WEBITIME_RENAME_SCRIPT_SRC) {
+                const relativeUrl = new URL('WebiTime_GT_Common.js', WEBITIME_RENAME_SCRIPT_SRC);
+                relativeUrl.searchParams.set('_wt', Date.now());
+                candidates.push(relativeUrl.href);
+            }
+        } catch (_) {}
+
+        // 2) URL GitHub Pages habituelle.
+        candidates.push(WEBITIME_COMMON_URL + '?_wt=' + Date.now());
+
+        // 3) Fallback CDN directement sur la branche GT.
+        candidates.push(WEBITIME_COMMON_FALLBACK_URL + '?_wt=' + Date.now());
+
+        const tried = new Set();
+        for (const url of candidates) {
+            if (!url || tried.has(url)) continue;
+            tried.add(url);
+
+            try {
+                await new Promise((resolve, reject) => {
+                    const script = document.createElement('script');
+                    script.src = url;
+                    script.async = true;
+                    script.onload = resolve;
+                    script.onerror = () => reject(new Error('Chargement impossible : ' + url));
+                    (document.head || document.documentElement).appendChild(script);
+                });
+
+                if (window.WebiTimeGT) {
+                    WEBITIME_UI = window.WebiTimeGT;
+                    WEBITIME_UI.injectStyles();
+                    WEBITIME_RENAME_GITHUB_ISSUES_URL = WEBITIME_UI.buildIssueUrl('GT-RenameAttaqueSortante', WEBITIME_SOURCE_URL);
+                    return WEBITIME_UI;
+                }
+            } catch (error) {
+                console.warn('[Webi-Time Rename Attaques] Echec du chargement commun :', url, error);
+            }
+        }
+
+        throw new Error('Impossible de charger WebiTime_GT_Common.js');
+    })();
+
+    return webiTimeCommonLoading;
 }
-WEBITIME_UI.injectStyles();
-const WEBITIME_RENAME_GITHUB_ISSUES_URL = WEBITIME_UI.buildIssueUrl('GT-RenameAttaqueSortante', WEBITIME_SOURCE_URL);
 
 function injectWebiTimeRenameStyles() {
+    if (!WEBITIME_UI) return;
+    WEBITIME_UI.injectStyles();
     WEBITIME_UI.injectRenameStyles(WEBITIME_RENAME_STYLE_ID);
 }
 
@@ -327,7 +385,15 @@ function run(){
         });
 
 }
-run();
+
+ensureWebiTimeCommon()
+    .then(run)
+    .catch(function (error) {
+        console.error('[Webi-Time Rename Attaques] Impossible de charger WebiTime_GT_Common.js.', error);
+        if (typeof UI !== 'undefined' && UI.ErrorMessage) {
+            UI.ErrorMessage('Impossible de charger le composant Webi-Time commun.');
+        }
+    });
 
 
 /**
