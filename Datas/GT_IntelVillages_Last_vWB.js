@@ -1,7 +1,7 @@
 (async function () {
     'use strict';
 
-    const SCRIPT_VERSION = '4.19';
+    const SCRIPT_VERSION = '4.20';
 
     // Signature runtime volontairement répartie en plusieurs fragments.
     // Le nom reste lisible dans l'en-tête documentaire ci-dessous, mais
@@ -48,6 +48,7 @@
     // - v4.14 : suppression de la lueur autour des compteurs pour une meilleure lisibilite
     // - v4.16 : fenêtre de redirection Webi-Time + bouton Paramètres (données enregistrées / signalement de bug)
     // - v4.18 : CSS et composants UI communs externalisés dans WebiTime_GT_Common.js
+    // - v4.20 : chargeur autonome du composant commun avec fallback GitHub Pages / jsDelivr
     // - v4.17 : composants Webi-Time communs avec Rename Attaques + tailles de police harmonisées
     //
     // Base technique inspiree de Set/Get Village Notes (RedAlert/JawJaw) :
@@ -66,24 +67,61 @@
     const REDIRECT_PREF_KEY = 'webitime.gtIntelVillages.skipRedirect';
     const WEBITIME_SOURCE_URL = 'https://github.com/Webi-Time/WBScripts/tree/GT/Datas';
     const WEBITIME_COMMON_URL = 'https://webi-time.github.io/WBScripts/Datas/WebiTime_GT_Common.js';
+    const WEBITIME_COMMON_FALLBACK_URL = 'https://cdn.jsdelivr.net/gh/Webi-Time/WBScripts@GT/Datas/WebiTime_GT_Common.js';
 
-    // Charge automatiquement le composant commun si le raccourci ne l'a pas déjà fait.
-    // Cela évite toute condition de course entre deux $.getScript() lancés en parallèle.
-    if (!window.WebiTimeGT) {
+    async function ensureWebiTimeCommon() {
+        if (window.WebiTimeGT) return window.WebiTimeGT;
+
+        const candidates = [];
+
+        // 1) Même dossier que le script courant : évite les problèmes de branche / chemin Pages.
         try {
-            await $.getScript(WEBITIME_COMMON_URL);
-        } catch (error) {
-            console.error('[Webi-Time Intel Villages] Impossible de charger WebiTime_GT_Common.js.', error);
-            if (typeof UI !== 'undefined' && UI.ErrorMessage) {
-                UI.ErrorMessage('Impossible de charger le composant Webi-Time commun.');
+            const currentSrc = document.currentScript && document.currentScript.src;
+            if (currentSrc) {
+                const relativeUrl = new URL('WebiTime_GT_Common.js', currentSrc);
+                relativeUrl.searchParams.set('_wt', Date.now());
+                candidates.push(relativeUrl.href);
             }
-            return;
+        } catch (_) {}
+
+        // 2) URL GitHub Pages habituelle.
+        candidates.push(WEBITIME_COMMON_URL + '?_wt=' + Date.now());
+
+        // 3) Fallback CDN directement sur la branche GT.
+        candidates.push(WEBITIME_COMMON_FALLBACK_URL + '?_wt=' + Date.now());
+
+        const tried = new Set();
+        for (const url of candidates) {
+            if (!url || tried.has(url)) continue;
+            tried.add(url);
+
+            try {
+                await new Promise((resolve, reject) => {
+                    const script = document.createElement('script');
+                    script.src = url;
+                    script.async = true;
+                    script.onload = () => resolve();
+                    script.onerror = () => reject(new Error('Chargement impossible : ' + url));
+                    (document.head || document.documentElement).appendChild(script);
+                });
+
+                if (window.WebiTimeGT) {
+                    return window.WebiTimeGT;
+                }
+            } catch (error) {
+                console.warn('[Webi-Time Intel Villages] Echec du chargement commun :', url, error);
+            }
         }
+
+        return null;
     }
 
-    const WEBITIME_UI = window.WebiTimeGT;
+    const WEBITIME_UI = await ensureWebiTimeCommon();
     if (!WEBITIME_UI) {
-        console.error('[Webi-Time Intel Villages] WebiTime_GT_Common.js est introuvable après chargement.');
+        console.error('[Webi-Time Intel Villages] Impossible de charger WebiTime_GT_Common.js.');
+        if (typeof UI !== 'undefined' && UI.ErrorMessage) {
+            UI.ErrorMessage('Impossible de charger le composant Webi-Time commun.');
+        }
         return;
     }
     WEBITIME_UI.injectStyles();
