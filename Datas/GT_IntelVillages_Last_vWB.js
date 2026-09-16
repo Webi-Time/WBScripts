@@ -1,7 +1,7 @@
 (async function () {
     'use strict';
 
-    const SCRIPT_VERSION = '4.14';
+    const SCRIPT_VERSION = '4.17';
 
     // Signature runtime volontairement répartie en plusieurs fragments.
     // Le nom reste lisible dans l'en-tête documentaire ci-dessous, mais
@@ -46,6 +46,8 @@
     // - v4.12 : refonte complete de l IHM aux couleurs Webi-Time (cyan / magenta / orange, tableau de bord et journal)
     // - v4.13 : journal structure sur plusieurs lignes pour les details OFF/DEFF/batiments
     // - v4.14 : suppression de la lueur autour des compteurs pour une meilleure lisibilite
+    // - v4.16 : fenêtre de redirection Webi-Time + bouton Paramètres (données enregistrées / signalement de bug)
+    // - v4.17 : composants Webi-Time communs avec Rename Attaques + tailles de police harmonisées
     //
     // Base technique inspiree de Set/Get Village Notes (RedAlert/JawJaw) :
     // recuperation des villageId depuis attack_info_att/def et POST edit_notes.
@@ -60,6 +62,545 @@
 
     const PREFIX = 'gtBatchVillageNotes';
     const BOX_ID = PREFIX + 'Box';
+    const REDIRECT_PREF_KEY = 'webitime.gtIntelVillages.skipRedirect';
+    const WEBITIME_SOURCE_URL = 'https://github.com/Webi-Time/WBScripts/tree/GT/Datas';
+
+    function createWebiTimeSharedUi() {
+        const STYLE_ID = 'webiTimeSharedUiStyle';
+        const SETTINGS_CLOSE_DELAY_MS = 800;
+
+        const theme = Object.freeze({
+            colors: Object.freeze({
+                bg: '#07111d',
+                bgSoft: '#0b1a2a',
+                panel: 'rgba(8, 24, 39, .92)',
+                panel2: 'rgba(10, 31, 50, .86)',
+                line: 'rgba(55, 220, 255, .34)',
+                cyan: '#37dcff',
+                cyan2: '#00b9f5',
+                magenta: '#ff42c8',
+                orange: '#ff7a2c',
+                green: '#43e7a3',
+                red: '#ff5b72',
+                yellow: '#ffc857',
+                text: '#eaf8ff',
+                muted: '#8eb5c9'
+            }),
+            fonts: Object.freeze({
+                title: '24px',
+                body: '14px',
+                small: '13px',
+                compact: '12px',
+                footer: '11px',
+                modalTitle: '19px'
+            })
+        });
+
+        function injectStyles() {
+            if (document.getElementById(STYLE_ID)) return;
+
+            const style = document.createElement('style');
+            style.id = STYLE_ID;
+            style.textContent = `
+                :root {
+                    --webi-bg: ${theme.colors.bg};
+                    --webi-bg-soft: ${theme.colors.bgSoft};
+                    --webi-panel: ${theme.colors.panel};
+                    --webi-panel-2: ${theme.colors.panel2};
+                    --webi-line: ${theme.colors.line};
+                    --webi-cyan: ${theme.colors.cyan};
+                    --webi-cyan-2: ${theme.colors.cyan2};
+                    --webi-magenta: ${theme.colors.magenta};
+                    --webi-orange: ${theme.colors.orange};
+                    --webi-green: ${theme.colors.green};
+                    --webi-red: ${theme.colors.red};
+                    --webi-yellow: ${theme.colors.yellow};
+                    --webi-text: ${theme.colors.text};
+                    --webi-muted: ${theme.colors.muted};
+                    --webi-font-title: ${theme.fonts.title};
+                    --webi-font-body: ${theme.fonts.body};
+                    --webi-font-small: ${theme.fonts.small};
+                    --webi-font-compact: ${theme.fonts.compact};
+                    --webi-font-footer: ${theme.fonts.footer};
+                    --webi-font-modal-title: ${theme.fonts.modalTitle};
+                }
+
+                .wt-modal-root {
+                    position: fixed;
+                    inset: 0;
+                    z-index: 25000;
+                    font-family: "Segoe UI", Arial, sans-serif;
+                }
+
+                .wt-modal-overlay {
+                    position: fixed;
+                    inset: 0;
+                    z-index: 25000;
+                    background: rgba(1, 7, 13, .76);
+                    backdrop-filter: blur(2px);
+                }
+
+                .wt-modal-wrap {
+                    position: fixed;
+                    inset: 0;
+                    z-index: 25001;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 18px;
+                    box-sizing: border-box;
+                    pointer-events: none;
+                }
+
+                .wt-modal {
+                    position: relative;
+                    width: min(540px, calc(100vw - 36px));
+                    overflow: hidden;
+                    border: 1px solid rgba(55,220,255,.68);
+                    border-radius: 12px;
+                    background:
+                        radial-gradient(circle at 8% -20%, rgba(0,196,255,.19), transparent 38%),
+                        radial-gradient(circle at 96% 0%, rgba(255,66,200,.13), transparent 34%),
+                        linear-gradient(180deg, #081725 0%, #06111d 100%);
+                    box-shadow: 0 0 30px rgba(0,177,238,.16), 0 18px 55px rgba(0,0,0,.52);
+                    color: var(--webi-text);
+                    pointer-events: auto;
+                }
+
+                .wt-modal::before {
+                    content: "";
+                    position: absolute;
+                    inset: 0;
+                    pointer-events: none;
+                    opacity: .23;
+                    background-image:
+                        linear-gradient(rgba(55,220,255,.035) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(55,220,255,.035) 1px, transparent 1px);
+                    background-size: 26px 26px;
+                }
+
+                .wt-modal-content {
+                    position: relative;
+                    z-index: 1;
+                    padding: 18px;
+                }
+
+                .wt-modal-title {
+                    margin: 0 0 10px;
+                    color: var(--webi-cyan);
+                    font-size: var(--webi-font-modal-title);
+                    font-weight: 800;
+                    line-height: 1.2;
+                }
+
+                .wt-modal-text {
+                    padding: 12px 13px;
+                    border: 1px solid rgba(55,220,255,.18);
+                    border-radius: 8px;
+                    background: rgba(8,27,43,.72);
+                    color: #d7edf7;
+                    font-size: var(--webi-font-body);
+                    line-height: 1.5;
+                }
+
+                .wt-modal-text p {
+                    margin: 0 0 8px;
+                    font-size: var(--webi-font-body) !important;
+                }
+
+                .wt-modal-text p:last-child { margin-bottom: 0; }
+
+                .wt-modal-option {
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 9px;
+                    margin-top: 10px;
+                    padding: 10px 11px;
+                    border: 1px solid rgba(55,220,255,.18);
+                    border-radius: 8px;
+                    background: rgba(7,24,38,.78);
+                    color: #bfdce9;
+                    font-size: var(--webi-font-small);
+                    line-height: 1.35;
+                    cursor: pointer;
+                }
+
+                .wt-modal-option input {
+                    width: 16px;
+                    height: 16px;
+                    margin: 1px 0 0;
+                    accent-color: var(--webi-cyan);
+                    flex: 0 0 auto;
+                }
+
+                .wt-modal-actions {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 9px;
+                    margin-top: 13px;
+                }
+
+                .wt-modal-btn {
+                    min-height: 38px;
+                    padding: 7px 12px;
+                    border: 1px solid rgba(55,220,255,.58);
+                    border-radius: 7px;
+                    background: linear-gradient(180deg, rgba(10,56,78,.96), rgba(6,36,53,.96));
+                    color: #eafaff;
+                    box-shadow: 0 0 11px rgba(55,220,255,.10), 0 1px 0 rgba(255,255,255,.06) inset;
+                    font: 750 var(--webi-font-body) "Segoe UI", Arial, sans-serif;
+                    cursor: pointer;
+                }
+
+                .wt-modal-btn:hover {
+                    border-color: var(--webi-cyan);
+                    background: linear-gradient(180deg, rgba(12,73,99,.98), rgba(7,46,66,.98));
+                    box-shadow: 0 0 16px rgba(55,220,255,.18);
+                }
+
+                .wt-modal-btn.secondary {
+                    border-color: rgba(255,66,200,.50);
+                    background: linear-gradient(180deg, rgba(63,20,64,.92), rgba(34,13,47,.96));
+                }
+
+                .wt-modal-btn.secondary:hover {
+                    border-color: var(--webi-magenta);
+                    box-shadow: 0 0 16px rgba(255,66,200,.16);
+                }
+
+                .wt-settings-wrap {
+                    position: relative !important;
+                    display: inline-flex;
+                    align-items: center;
+                    flex: 0 0 auto;
+                    margin: 0 !important;
+                    z-index: 20 !important;
+                }
+
+                .wt-settings-btn {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 22px;
+                    height: 22px;
+                    padding: 0;
+                    border: 1px solid rgba(55,220,255,.54);
+                    border-radius: 50%;
+                    outline: none;
+                    background: rgba(5,24,38,.92);
+                    color: var(--webi-cyan);
+                    box-shadow: 0 0 7px rgba(55,220,255,.10);
+                    font-family: "Segoe UI Symbol", "Segoe UI", Arial, sans-serif;
+                    font-size: var(--webi-font-small);
+                    font-weight: 700;
+                    line-height: 1;
+                    cursor: pointer;
+                }
+
+                .wt-settings-btn:hover,
+                .wt-settings-btn:focus {
+                    border-color: var(--webi-cyan);
+                    background: rgba(8,43,61,.98);
+                    color: #eaffff;
+                    box-shadow: 0 0 14px rgba(55,220,255,.28);
+                }
+
+                .wt-settings-popover {
+                    position: absolute;
+                    bottom: 29px;
+                    left: 0;
+                    width: 235px;
+                    padding: 8px;
+                    box-sizing: border-box;
+                    visibility: hidden;
+                    opacity: 0;
+                    transform: translateY(-4px);
+                    pointer-events: none;
+                    border: 1px solid rgba(55,220,255,.34);
+                    border-radius: 8px;
+                    background:
+                        radial-gradient(circle at 90% 0%, rgba(255,66,200,.10), transparent 35%),
+                        linear-gradient(180deg, rgba(8,27,43,.99), rgba(4,16,27,.99));
+                    box-shadow: 0 10px 24px rgba(0,0,0,.40), 0 0 15px rgba(55,220,255,.10);
+                    transition: opacity .12s ease, transform .12s ease, visibility .12s ease;
+                }
+
+                .wt-settings-wrap:hover .wt-settings-popover,
+                .wt-settings-wrap:focus-within .wt-settings-popover,
+                .wt-settings-wrap.is-open .wt-settings-popover {
+                    visibility: visible;
+                    opacity: 1;
+                    transform: translateY(0);
+                    pointer-events: auto;
+                }
+
+                .wt-settings-action {
+                    width: 100%;
+                    min-height: 31px;
+                    padding: 5px 8px;
+                    border-radius: 6px;
+                    font: 750 var(--webi-font-compact) "Segoe UI", Arial, sans-serif;
+                    cursor: pointer;
+                }
+
+                .wt-settings-delete {
+                    border: 1px solid rgba(255,91,114,.44);
+                    background: rgba(91,19,34,.46);
+                    color: #ff91a2;
+                }
+
+                .wt-settings-delete:hover {
+                    border-color: var(--webi-red);
+                    background: rgba(124,24,44,.60);
+                    color: #ffd8de;
+                }
+
+                .wt-settings-bug {
+                    margin-top: 7px;
+                    border: 1px solid rgba(55,220,255,.44);
+                    background: rgba(12,62,83,.46);
+                    color: #8eeeff;
+                }
+
+                .wt-settings-bug:hover {
+                    border-color: var(--webi-cyan);
+                    background: rgba(14,82,108,.60);
+                    color: #ecfdff;
+                    box-shadow: 0 0 10px rgba(55,220,255,.12);
+                }
+
+                .wt-settings-delete.is-cleared {
+                    border-color: rgba(67,231,163,.42);
+                    background: rgba(17,83,61,.42);
+                    color: var(--webi-green);
+                    cursor: default;
+                }
+
+                @media (max-width: 560px) {
+                    .wt-modal-actions { grid-template-columns: 1fr; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        function buildIssueUrl(scriptName, sourceUrl) {
+            const title = `[${scriptName}] Bug`;
+            const body = [
+                `Script : ${scriptName}`,
+                `Source : ${sourceUrl}`,
+                '',
+                'Description du bug :',
+                '',
+                'Étapes pour reproduire :',
+                '1. ',
+                '2. ',
+                '3. ',
+                '',
+                'Résultat attendu :',
+                '',
+                'Résultat obtenu :',
+                ''
+            ].join('\\n');
+
+            return 'https://github.com/Webi-Time/WBScripts/issues/new?title=' +
+                encodeURIComponent(title) + '&body=' + encodeURIComponent(body);
+        }
+
+        function getStoredFlag(key) {
+            try {
+                return localStorage.getItem(key) === '1';
+            } catch (_) {
+                return false;
+            }
+        }
+
+        function setStoredFlag(key, enabled) {
+            try {
+                if (enabled) localStorage.setItem(key, '1');
+                else localStorage.removeItem(key);
+            } catch (_) {}
+        }
+
+        function redirectToScreen(screen, uriParams = {}, removeParams = []) {
+            if (window.TribalWars && typeof window.TribalWars.redirect === 'function') {
+                window.TribalWars.redirect(screen, uriParams);
+                return;
+            }
+
+            const url = new URL(location.href);
+            url.searchParams.set('screen', screen);
+            removeParams.forEach(param => url.searchParams.delete(param));
+            Object.entries(uriParams).forEach(([key, value]) => {
+                if (value === null || typeof value === 'undefined') url.searchParams.delete(key);
+                else url.searchParams.set(key, String(value));
+            });
+            location.href = url.href;
+        }
+
+        function closeRedirectDialog(rootId, eventNamespace) {
+            $('#' + rootId).remove();
+            $(document).off('keydown.' + eventNamespace);
+        }
+
+        function showRedirectDialog(options) {
+            injectStyles();
+
+            const rootId = options.rootId || 'webiTimeRedirectModalRoot';
+            const eventNamespace = options.eventNamespace || 'webiTimeRedirect';
+            const getPreference = options.getPreference || (() => false);
+            const setPreference = options.setPreference || (() => {});
+            const redirect = options.redirect || (() => {});
+
+            if (getPreference()) {
+                if (typeof UI !== 'undefined' && UI.InfoMessage && options.infoMessage) {
+                    UI.InfoMessage(options.infoMessage);
+                }
+                setTimeout(redirect, 200);
+                return;
+            }
+
+            closeRedirectDialog(rootId, eventNamespace);
+
+            const modal = `
+                <div id="${rootId}" class="wt-modal-root">
+                    <div class="wt-modal-overlay"></div>
+                    <div class="wt-modal-wrap">
+                        <div class="wt-modal" role="dialog" aria-modal="true">
+                            <div class="wt-modal-content">
+                                <div class="wt-modal-title">${options.title || 'Redirection'}</div>
+                                <div class="wt-modal-text">${options.message || ''}</div>
+                                <label class="wt-modal-option">
+                                    <input type="checkbox" class="wt-modal-skip">
+                                    <span>Ne plus me demander et rediriger automatiquement la prochaine fois</span>
+                                </label>
+                                <div class="wt-modal-actions">
+                                    <button type="button" class="wt-modal-btn wt-modal-confirm">Emmène-moi là-bas !</button>
+                                    <button type="button" class="wt-modal-btn secondary wt-modal-cancel">Laisse tomber...</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+
+            $('body').append(modal);
+            const $root = $('#' + rootId);
+
+            $root.find('.wt-modal-confirm').on('click', function () {
+                setPreference($root.find('.wt-modal-skip').prop('checked'));
+                closeRedirectDialog(rootId, eventNamespace);
+                redirect();
+            });
+
+            $root.find('.wt-modal-cancel, .wt-modal-overlay').on('click', function () {
+                closeRedirectDialog(rootId, eventNamespace);
+                if (typeof options.onCancel === 'function') options.onCancel();
+            });
+
+            $(document).on('keydown.' + eventNamespace, function (event) {
+                if (event.key === 'Escape') {
+                    closeRedirectDialog(rootId, eventNamespace);
+                    if (typeof options.onCancel === 'function') options.onCancel();
+                }
+            });
+        }
+
+        function buildSettingsMarkup(clearButtonId, bugButtonId) {
+            return `
+                <span class="wt-settings-wrap">
+                    <button type="button" class="wt-settings-btn" aria-label="Paramètres" title="Paramètres">⚙</button>
+                    <span class="wt-settings-popover" role="dialog" aria-label="Paramètres du script">
+                        <button type="button" id="${clearButtonId}" class="wt-settings-action wt-settings-delete">Supprimer les données enregistrées</button>
+                        <button type="button" id="${bugButtonId}" class="wt-settings-action wt-settings-bug">Signaler un bug</button>
+                    </span>
+                </span>`;
+        }
+
+        function bindSettingsPopover(options) {
+            injectStyles();
+
+            const $container = $(options.containerSelector);
+            const $wrap = $container.find('.wt-settings-wrap');
+            const $popover = $wrap.find('.wt-settings-popover');
+            const $button = $wrap.find('.wt-settings-btn');
+            let closeTimer = null;
+
+            function cancelClose() {
+                if (closeTimer !== null) {
+                    clearTimeout(closeTimer);
+                    closeTimer = null;
+                }
+            }
+
+            function openPopover() {
+                cancelClose();
+                $wrap.addClass('is-open');
+            }
+
+            function scheduleClose() {
+                cancelClose();
+                closeTimer = setTimeout(function () {
+                    $wrap.removeClass('is-open');
+                    closeTimer = null;
+                }, SETTINGS_CLOSE_DELAY_MS);
+            }
+
+            $wrap
+                .off('.webiTimeSettings')
+                .on('mouseenter.webiTimeSettings', openPopover)
+                .on('mouseleave.webiTimeSettings', scheduleClose);
+
+            $popover
+                .off('.webiTimeSettings')
+                .on('mouseenter.webiTimeSettings', openPopover)
+                .on('mouseleave.webiTimeSettings', scheduleClose);
+
+            $button
+                .off('.webiTimeSettings')
+                .on('focus.webiTimeSettings click.webiTimeSettings', openPopover)
+                .on('blur.webiTimeSettings', scheduleClose);
+
+            $(options.bugButtonSelector).off('click.webiTimeSettings').on('click.webiTimeSettings', function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                cancelClose();
+                openPopover();
+                window.open(options.bugUrl, '_blank', 'noopener,noreferrer');
+            });
+
+            $(options.clearButtonSelector).off('click.webiTimeSettings').on('click.webiTimeSettings', function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                cancelClose();
+                openPopover();
+
+                if (typeof options.onClear === 'function') options.onClear();
+
+                $(this)
+                    .addClass('is-cleared')
+                    .prop('disabled', true)
+                    .text('✓ Données supprimées');
+
+                if (typeof UI !== 'undefined' && UI.SuccessMessage) {
+                    UI.SuccessMessage(options.successMessage || 'Données enregistrées supprimées.');
+                }
+            });
+        }
+
+        return Object.freeze({
+            theme,
+            injectStyles,
+            buildIssueUrl,
+            getStoredFlag,
+            setStoredFlag,
+            redirectToScreen,
+            showRedirectDialog,
+            buildSettingsMarkup,
+            bindSettingsPopover
+        });
+    }
+
+    const WEBITIME_UI = createWebiTimeSharedUi();
+    const GITHUB_ISSUE_URL = WEBITIME_UI.buildIssueUrl('GT-IntelVillages', WEBITIME_SOURCE_URL);
 
     // Ordre canonique interne. On garde toutes les unites standard, meme si elles
     // ne sont pas actives sur le monde : les unites absentes restent simplement a 0.
@@ -84,15 +625,50 @@
     const BUILDING_SOURCE_PRIORITY = { ESP: 1, CATA: 2, BELIER: 2 };
 
     // ========================================================================
+    // Fenetres Webi-Time / redirection / parametres
+    // ========================================================================
+
+    function clearSavedIntelData() {
+        WEBITIME_UI.setStoredFlag(REDIRECT_PREF_KEY, false);
+    }
+
+    function redirectToReportList() {
+        WEBITIME_UI.redirectToScreen('report', {}, ['view', 'mode', 'page']);
+    }
+
+    function showReportRedirect(message) {
+        WEBITIME_UI.showRedirectDialog({
+            rootId: 'webiTimeRedirectModalRoot',
+            eventNamespace: 'webiTimeRedirect',
+            title: 'Redirection vers Rapports',
+            message,
+            infoMessage: 'Redirection vers <strong>Rapports</strong>...',
+            getPreference: () => WEBITIME_UI.getStoredFlag(REDIRECT_PREF_KEY),
+            setPreference: enabled => WEBITIME_UI.setStoredFlag(REDIRECT_PREF_KEY, enabled),
+            redirect: redirectToReportList
+        });
+    }
+
+    function bindSettingsPopover() {
+        WEBITIME_UI.bindSettingsPopover({
+            containerSelector: '#' + BOX_ID,
+            clearButtonSelector: '#' + PREFIX + 'ClearSaved',
+            bugButtonSelector: '#' + PREFIX + 'ReportBug',
+            bugUrl: GITHUB_ISSUE_URL,
+            onClear: clearSavedIntelData,
+            successMessage: 'Données enregistrées supprimées.'
+        });
+    }
+
+    // ========================================================================
     // Verification de contexte
     // ========================================================================
 
     if (typeof game_data === 'undefined' || game_data.screen !== 'report') {
-        if (typeof UI !== 'undefined') {
-            UI.ErrorMessage('Lance ce script depuis la liste des rapports.');
-        } else {
-            alert('Lance ce script depuis la liste des rapports.');
-        }
+        showReportRedirect(
+            '<p>Pour utiliser <b>Webi-Time Intel Villages</b>, tu dois être sur la liste des rapports.</p>' +
+            '<p>Le script va te rediriger vers l’interface <b>Rapports</b>.</p>'
+        );
         return;
     }
 
@@ -100,7 +676,10 @@
     // Le script batch attend une page contenant plusieurs liens view=...
     const initialReportLinks = findReportLinks(document, 'PAGE');
     if (!initialReportLinks.length && new URL(location.href).searchParams.get('view')) {
-        UI.ErrorMessage('Le batch doit etre lance depuis la liste des rapports, pas depuis un rapport individuel.');
+        showReportRedirect(
+            '<p>Le batch doit être lancé depuis la <b>liste des rapports</b>, pas depuis un rapport individuel.</p>' +
+            '<p>Je peux te ramener directement à la liste.</p>'
+        );
         return;
     }
 
@@ -268,6 +847,7 @@
     // ========================================================================
 
     function renderUi() {
+        WEBITIME_UI.injectStyles();
         $('#' + BOX_ID).remove();
         $('#' + PREFIX + 'Style').remove();
 
@@ -276,20 +856,20 @@
         const html = `
             <style id="${PREFIX}Style">
                 #${BOX_ID} {
-                    --wt-bg: #07111d;
-                    --wt-bg-soft: #0b1a2a;
-                    --wt-panel: rgba(8, 24, 39, .88);
-                    --wt-panel-2: rgba(10, 31, 50, .82);
-                    --wt-line: rgba(38, 205, 255, .34);
-                    --wt-cyan: #37dcff;
-                    --wt-cyan-2: #00b9f5;
-                    --wt-magenta: #ff42c8;
-                    --wt-orange: #ff7a2c;
-                    --wt-green: #43e7a3;
-                    --wt-red: #ff5b72;
-                    --wt-yellow: #ffc857;
-                    --wt-text: #eaf8ff;
-                    --wt-muted: #8eb5c9;
+                    --wt-bg: var(--webi-bg);
+                    --wt-bg-soft: var(--webi-bg-soft);
+                    --wt-panel: var(--webi-panel);
+                    --wt-panel-2: var(--webi-panel-2);
+                    --wt-line: var(--webi-line);
+                    --wt-cyan: var(--webi-cyan);
+                    --wt-cyan-2: var(--webi-cyan-2);
+                    --wt-magenta: var(--webi-magenta);
+                    --wt-orange: var(--webi-orange);
+                    --wt-green: var(--webi-green);
+                    --wt-red: var(--webi-red);
+                    --wt-yellow: var(--webi-yellow);
+                    --wt-text: var(--webi-text);
+                    --wt-muted: var(--webi-muted);
 
                     position: relative;
                     margin: 12px 0 16px 0;
@@ -379,7 +959,7 @@
                     box-shadow:
                         0 0 17px rgba(55,220,255,.22),
                         0 0 28px rgba(255,66,200,.10) inset;
-                    font-size: 38px;
+                    font-size: 36px;
                     line-height: 1;
                 }
 
@@ -397,7 +977,7 @@
 
                 #${BOX_ID} .gtiv-title {
                     margin: 0;
-                    font-size: 24px;
+                    font-size: var(--webi-font-title);
                     font-weight: 800;
                     line-height: 1.05;
                     letter-spacing: .1px;
@@ -415,7 +995,7 @@
                 #${BOX_ID} .gtiv-byline {
                     margin-top: 5px;
                     color: #d8eef8;
-                    font-size: 13px;
+                    font-size: var(--webi-font-small);
                 }
 
                 #${BOX_ID} .gtiv-byline b {
@@ -425,7 +1005,7 @@
                 #${BOX_ID} .gtiv-tagline {
                     margin-top: 5px;
                     color: var(--wt-muted);
-                    font-size: 13px;
+                    font-size: var(--webi-font-small);
                     letter-spacing: .15px;
                 }
 
@@ -437,7 +1017,7 @@
                     border-left: 1px solid rgba(55,220,255,.35);
                     text-align: right;
                     color: #82dfff;
-                    font-size: 11px;
+                    font-size: var(--webi-font-footer);
                     line-height: 1.7;
                     letter-spacing: 1.15px;
                     text-transform: uppercase;
@@ -472,7 +1052,7 @@
                     display: block;
                     margin: 0 0 6px 0;
                     color: #b9d7e6;
-                    font-size: 12px;
+                    font-size: var(--webi-font-compact);
                     font-weight: 700;
                     letter-spacing: .5px;
                     text-transform: uppercase;
@@ -490,7 +1070,7 @@
                     color: #e9f9ff !important;
                     box-shadow: 0 0 0 1px rgba(0,0,0,.22) inset !important;
                     padding: 3px 8px !important;
-                    font-size: 13px !important;
+                    font-size: var(--webi-font-small) !important;
                 }
 
                 #${BOX_ID} select.input-nicer:focus {
@@ -517,7 +1097,7 @@
                     min-height: 20px;
                     margin: 0;
                     color: #cfe7f3;
-                    font-size: 13px;
+                    font-size: var(--webi-font-small);
                     font-weight: 400;
                     cursor: pointer;
                 }
@@ -551,7 +1131,7 @@
                         0 0 20px rgba(55,220,255,.10) inset !important;
                     color: #80eaff !important;
                     text-shadow: 0 0 7px rgba(55,220,255,.55);
-                    font-size: 14px !important;
+                    font-size: var(--webi-font-body) !important;
                     font-weight: 800 !important;
                     letter-spacing: .15px;
                     cursor: pointer;
@@ -582,7 +1162,7 @@
                     gap: 8px;
                     margin-bottom: 6px;
                     color: #b9dbe8;
-                    font-size: 12px;
+                    font-size: var(--webi-font-compact);
                 }
 
                 #${BOX_ID} .gtiv-progress-track {
@@ -657,7 +1237,7 @@
                     margin-top: 4px;
                     overflow: hidden;
                     color: #91afbf;
-                    font-size: 11px;
+                    font-size: var(--webi-font-footer);
                     line-height: 1.15;
                     text-overflow: ellipsis;
                     white-space: nowrap;
@@ -678,7 +1258,7 @@
                     border-radius: 6px;
                     background: rgba(8,28,44,.72);
                     color: #cce9f5;
-                    font-size: 13px;
+                    font-size: var(--webi-font-small);
                 }
 
                 #${BOX_ID} .gtiv-log-section {
@@ -701,7 +1281,7 @@
 
                 #${BOX_ID} .gtiv-log-title {
                     color: #d9f4ff;
-                    font-size: 13px;
+                    font-size: var(--webi-font-small);
                     font-weight: 700;
                 }
 
@@ -711,7 +1291,7 @@
                     border-radius: 5px;
                     background: rgba(255,255,255,.025);
                     color: #8eb5c9;
-                    font-size: 11px;
+                    font-size: var(--webi-font-footer);
                     cursor: pointer;
                 }
 
@@ -727,7 +1307,7 @@
                     padding: 8px 10px;
                     color: #a9cada;
                     font-family: Consolas, "Courier New", monospace;
-                    font-size: 12px;
+                    font-size: var(--webi-font-compact);
                     line-height: 1.55;
                     scrollbar-color: #1e6c8a #07111d;
                     scrollbar-width: thin;
@@ -788,7 +1368,7 @@
                     padding-top: 8px;
                     border-top: 1px solid rgba(55,220,255,.16);
                     color: #65879a;
-                    font-size: 11px;
+                    font-size: var(--webi-font-footer);
                 }
 
                 #${BOX_ID} .gtiv-footer-center {
@@ -941,7 +1521,10 @@
                     </div>
 
                     <div class="gtiv-footer">
-                        <span>Version ${SCRIPT_VERSION}</span>
+                        <span class="gtiv-footer-left">
+                            ${WEBITIME_UI.buildSettingsMarkup(PREFIX + 'ClearSaved', PREFIX + 'ReportBug')}
+                            <span>Version ${SCRIPT_VERSION}</span>
+                        </span>
                         <span class="gtiv-footer-center">Intelligence &nbsp;■&nbsp; Organisation &nbsp;■&nbsp; Supériorité</span>
                         <span class="gtiv-footer-right">🐼 <b>Webi-Time</b> &nbsp;|&nbsp; réalisé par ${author}</span>
                     </div>
@@ -956,6 +1539,7 @@
         $('#' + PREFIX + 'ClearLog').on('click', function () {
             $('#' + PREFIX + 'Log').empty();
         });
+        bindSettingsPopover();
     }
 
     function setMetric(name, value) {

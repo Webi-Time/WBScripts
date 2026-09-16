@@ -25,28 +25,567 @@ var forceRename = true;
 
 const WEBITIME_RENAME_NAME = 'Webi-Time Rename Attaques';
 const WEBITIME_RENAME_AUTHOR = 'NoLife4Ever';
-const WEBITIME_RENAME_VERSION = '1.0';
+const WEBITIME_RENAME_VERSION = '1.10';
 const WEBITIME_RENAME_STYLE_ID = 'webiTimeRenameAttackStyle';
+const WEBITIME_SOURCE_URL = 'https://github.com/Webi-Time/WBScripts/tree/GT/Datas';
+
+function createWebiTimeSharedUi() {
+    const STYLE_ID = 'webiTimeSharedUiStyle';
+    const SETTINGS_CLOSE_DELAY_MS = 800;
+
+    const theme = Object.freeze({
+        colors: Object.freeze({
+            bg: '#07111d',
+            bgSoft: '#0b1a2a',
+            panel: 'rgba(8, 24, 39, .92)',
+            panel2: 'rgba(10, 31, 50, .86)',
+            line: 'rgba(55, 220, 255, .34)',
+            cyan: '#37dcff',
+            cyan2: '#00b9f5',
+            magenta: '#ff42c8',
+            orange: '#ff7a2c',
+            green: '#43e7a3',
+            red: '#ff5b72',
+            yellow: '#ffc857',
+            text: '#eaf8ff',
+            muted: '#8eb5c9'
+        }),
+        fonts: Object.freeze({
+            title: '24px',
+            body: '14px',
+            small: '13px',
+            compact: '12px',
+            footer: '11px',
+            modalTitle: '19px'
+        })
+    });
+
+    function injectStyles() {
+        if (document.getElementById(STYLE_ID)) return;
+
+        const style = document.createElement('style');
+        style.id = STYLE_ID;
+        style.textContent = `
+            :root {
+                --webi-bg: ${theme.colors.bg};
+                --webi-bg-soft: ${theme.colors.bgSoft};
+                --webi-panel: ${theme.colors.panel};
+                --webi-panel-2: ${theme.colors.panel2};
+                --webi-line: ${theme.colors.line};
+                --webi-cyan: ${theme.colors.cyan};
+                --webi-cyan-2: ${theme.colors.cyan2};
+                --webi-magenta: ${theme.colors.magenta};
+                --webi-orange: ${theme.colors.orange};
+                --webi-green: ${theme.colors.green};
+                --webi-red: ${theme.colors.red};
+                --webi-yellow: ${theme.colors.yellow};
+                --webi-text: ${theme.colors.text};
+                --webi-muted: ${theme.colors.muted};
+                --webi-font-title: ${theme.fonts.title};
+                --webi-font-body: ${theme.fonts.body};
+                --webi-font-small: ${theme.fonts.small};
+                --webi-font-compact: ${theme.fonts.compact};
+                --webi-font-footer: ${theme.fonts.footer};
+                --webi-font-modal-title: ${theme.fonts.modalTitle};
+            }
+
+            .wt-modal-root {
+                position: fixed;
+                inset: 0;
+                z-index: 25000;
+                font-family: "Segoe UI", Arial, sans-serif;
+            }
+
+            .wt-modal-overlay {
+                position: fixed;
+                inset: 0;
+                z-index: 25000;
+                background: rgba(1, 7, 13, .76);
+                backdrop-filter: blur(2px);
+            }
+
+            .wt-modal-wrap {
+                position: fixed;
+                inset: 0;
+                z-index: 25001;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 18px;
+                box-sizing: border-box;
+                pointer-events: none;
+            }
+
+            .wt-modal {
+                position: relative;
+                width: min(540px, calc(100vw - 36px));
+                overflow: hidden;
+                border: 1px solid rgba(55,220,255,.68);
+                border-radius: 12px;
+                background:
+                    radial-gradient(circle at 8% -20%, rgba(0,196,255,.19), transparent 38%),
+                    radial-gradient(circle at 96% 0%, rgba(255,66,200,.13), transparent 34%),
+                    linear-gradient(180deg, #081725 0%, #06111d 100%);
+                box-shadow: 0 0 30px rgba(0,177,238,.16), 0 18px 55px rgba(0,0,0,.52);
+                color: var(--webi-text);
+                pointer-events: auto;
+            }
+
+            .wt-modal::before {
+                content: "";
+                position: absolute;
+                inset: 0;
+                pointer-events: none;
+                opacity: .23;
+                background-image:
+                    linear-gradient(rgba(55,220,255,.035) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(55,220,255,.035) 1px, transparent 1px);
+                background-size: 26px 26px;
+            }
+
+            .wt-modal-content {
+                position: relative;
+                z-index: 1;
+                padding: 18px;
+            }
+
+            .wt-modal-title {
+                margin: 0 0 10px;
+                color: var(--webi-cyan);
+                font-size: var(--webi-font-modal-title);
+                font-weight: 800;
+                line-height: 1.2;
+            }
+
+            .wt-modal-text {
+                padding: 12px 13px;
+                border: 1px solid rgba(55,220,255,.18);
+                border-radius: 8px;
+                background: rgba(8,27,43,.72);
+                color: #d7edf7;
+                font-size: var(--webi-font-body);
+                line-height: 1.5;
+            }
+
+            .wt-modal-text p {
+                margin: 0 0 8px;
+                font-size: var(--webi-font-body) !important;
+            }
+
+            .wt-modal-text p:last-child { margin-bottom: 0; }
+
+            .wt-modal-option {
+                display: flex;
+                align-items: flex-start;
+                gap: 9px;
+                margin-top: 10px;
+                padding: 10px 11px;
+                border: 1px solid rgba(55,220,255,.18);
+                border-radius: 8px;
+                background: rgba(7,24,38,.78);
+                color: #bfdce9;
+                font-size: var(--webi-font-small);
+                line-height: 1.35;
+                cursor: pointer;
+            }
+
+            .wt-modal-option input {
+                width: 16px;
+                height: 16px;
+                margin: 1px 0 0;
+                accent-color: var(--webi-cyan);
+                flex: 0 0 auto;
+            }
+
+            .wt-modal-actions {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 9px;
+                margin-top: 13px;
+            }
+
+            .wt-modal-btn {
+                min-height: 38px;
+                padding: 7px 12px;
+                border: 1px solid rgba(55,220,255,.58);
+                border-radius: 7px;
+                background: linear-gradient(180deg, rgba(10,56,78,.96), rgba(6,36,53,.96));
+                color: #eafaff;
+                box-shadow: 0 0 11px rgba(55,220,255,.10), 0 1px 0 rgba(255,255,255,.06) inset;
+                font: 750 var(--webi-font-body) "Segoe UI", Arial, sans-serif;
+                cursor: pointer;
+            }
+
+            .wt-modal-btn:hover {
+                border-color: var(--webi-cyan);
+                background: linear-gradient(180deg, rgba(12,73,99,.98), rgba(7,46,66,.98));
+                box-shadow: 0 0 16px rgba(55,220,255,.18);
+            }
+
+            .wt-modal-btn.secondary {
+                border-color: rgba(255,66,200,.50);
+                background: linear-gradient(180deg, rgba(63,20,64,.92), rgba(34,13,47,.96));
+            }
+
+            .wt-modal-btn.secondary:hover {
+                border-color: var(--webi-magenta);
+                box-shadow: 0 0 16px rgba(255,66,200,.16);
+            }
+
+            .wt-settings-wrap {
+                position: relative !important;
+                display: inline-flex;
+                align-items: center;
+                flex: 0 0 auto;
+                margin: 0 !important;
+                z-index: 20 !important;
+            }
+
+            .wt-settings-btn {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 22px;
+                height: 22px;
+                padding: 0;
+                border: 1px solid rgba(55,220,255,.54);
+                border-radius: 50%;
+                outline: none;
+                background: rgba(5,24,38,.92);
+                color: var(--webi-cyan);
+                box-shadow: 0 0 7px rgba(55,220,255,.10);
+                font-family: "Segoe UI Symbol", "Segoe UI", Arial, sans-serif;
+                font-size: var(--webi-font-small);
+                font-weight: 700;
+                line-height: 1;
+                cursor: pointer;
+            }
+
+            .wt-settings-btn:hover,
+            .wt-settings-btn:focus {
+                border-color: var(--webi-cyan);
+                background: rgba(8,43,61,.98);
+                color: #eaffff;
+                box-shadow: 0 0 14px rgba(55,220,255,.28);
+            }
+
+            .wt-settings-popover {
+                position: absolute;
+                bottom: 29px;
+                left: 0;
+                width: 235px;
+                padding: 8px;
+                box-sizing: border-box;
+                visibility: hidden;
+                opacity: 0;
+                transform: translateY(-4px);
+                pointer-events: none;
+                border: 1px solid rgba(55,220,255,.34);
+                border-radius: 8px;
+                background:
+                    radial-gradient(circle at 90% 0%, rgba(255,66,200,.10), transparent 35%),
+                    linear-gradient(180deg, rgba(8,27,43,.99), rgba(4,16,27,.99));
+                box-shadow: 0 10px 24px rgba(0,0,0,.40), 0 0 15px rgba(55,220,255,.10);
+                transition: opacity .12s ease, transform .12s ease, visibility .12s ease;
+            }
+
+            .wt-settings-wrap:hover .wt-settings-popover,
+            .wt-settings-wrap:focus-within .wt-settings-popover,
+            .wt-settings-wrap.is-open .wt-settings-popover {
+                visibility: visible;
+                opacity: 1;
+                transform: translateY(0);
+                pointer-events: auto;
+            }
+
+            .wt-settings-action {
+                width: 100%;
+                min-height: 31px;
+                padding: 5px 8px;
+                border-radius: 6px;
+                font: 750 var(--webi-font-compact) "Segoe UI", Arial, sans-serif;
+                cursor: pointer;
+            }
+
+            .wt-settings-delete {
+                border: 1px solid rgba(255,91,114,.44);
+                background: rgba(91,19,34,.46);
+                color: #ff91a2;
+            }
+
+            .wt-settings-delete:hover {
+                border-color: var(--webi-red);
+                background: rgba(124,24,44,.60);
+                color: #ffd8de;
+            }
+
+            .wt-settings-bug {
+                margin-top: 7px;
+                border: 1px solid rgba(55,220,255,.44);
+                background: rgba(12,62,83,.46);
+                color: #8eeeff;
+            }
+
+            .wt-settings-bug:hover {
+                border-color: var(--webi-cyan);
+                background: rgba(14,82,108,.60);
+                color: #ecfdff;
+                box-shadow: 0 0 10px rgba(55,220,255,.12);
+            }
+
+            .wt-settings-delete.is-cleared {
+                border-color: rgba(67,231,163,.42);
+                background: rgba(17,83,61,.42);
+                color: var(--webi-green);
+                cursor: default;
+            }
+
+            @media (max-width: 560px) {
+                .wt-modal-actions { grid-template-columns: 1fr; }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    function buildIssueUrl(scriptName, sourceUrl) {
+        const title = `[${scriptName}] Bug`;
+        const body = [
+            `Script : ${scriptName}`,
+            `Source : ${sourceUrl}`,
+            '',
+            'Description du bug :',
+            '',
+            'Étapes pour reproduire :',
+            '1. ',
+            '2. ',
+            '3. ',
+            '',
+            'Résultat attendu :',
+            '',
+            'Résultat obtenu :',
+            ''
+        ].join('\\n');
+
+        return 'https://github.com/Webi-Time/WBScripts/issues/new?title=' +
+            encodeURIComponent(title) + '&body=' + encodeURIComponent(body);
+    }
+
+    function getStoredFlag(key) {
+        try {
+            return localStorage.getItem(key) === '1';
+        } catch (_) {
+            return false;
+        }
+    }
+
+    function setStoredFlag(key, enabled) {
+        try {
+            if (enabled) localStorage.setItem(key, '1');
+            else localStorage.removeItem(key);
+        } catch (_) {}
+    }
+
+    function redirectToScreen(screen, uriParams = {}, removeParams = []) {
+        if (window.TribalWars && typeof window.TribalWars.redirect === 'function') {
+            window.TribalWars.redirect(screen, uriParams);
+            return;
+        }
+
+        const url = new URL(location.href);
+        url.searchParams.set('screen', screen);
+        removeParams.forEach(param => url.searchParams.delete(param));
+        Object.entries(uriParams).forEach(([key, value]) => {
+            if (value === null || typeof value === 'undefined') url.searchParams.delete(key);
+            else url.searchParams.set(key, String(value));
+        });
+        location.href = url.href;
+    }
+
+    function closeRedirectDialog(rootId, eventNamespace) {
+        $('#' + rootId).remove();
+        $(document).off('keydown.' + eventNamespace);
+    }
+
+    function showRedirectDialog(options) {
+        injectStyles();
+
+        const rootId = options.rootId || 'webiTimeRedirectModalRoot';
+        const eventNamespace = options.eventNamespace || 'webiTimeRedirect';
+        const getPreference = options.getPreference || (() => false);
+        const setPreference = options.setPreference || (() => {});
+        const redirect = options.redirect || (() => {});
+
+        if (getPreference()) {
+            if (typeof UI !== 'undefined' && UI.InfoMessage && options.infoMessage) {
+                UI.InfoMessage(options.infoMessage);
+            }
+            setTimeout(redirect, 200);
+            return;
+        }
+
+        closeRedirectDialog(rootId, eventNamespace);
+
+        const modal = `
+            <div id="${rootId}" class="wt-modal-root">
+                <div class="wt-modal-overlay"></div>
+                <div class="wt-modal-wrap">
+                    <div class="wt-modal" role="dialog" aria-modal="true">
+                        <div class="wt-modal-content">
+                            <div class="wt-modal-title">${options.title || 'Redirection'}</div>
+                            <div class="wt-modal-text">${options.message || ''}</div>
+                            <label class="wt-modal-option">
+                                <input type="checkbox" class="wt-modal-skip">
+                                <span>Ne plus me demander et rediriger automatiquement la prochaine fois</span>
+                            </label>
+                            <div class="wt-modal-actions">
+                                <button type="button" class="wt-modal-btn wt-modal-confirm">Emmène-moi là-bas !</button>
+                                <button type="button" class="wt-modal-btn secondary wt-modal-cancel">Laisse tomber...</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+
+        $('body').append(modal);
+        const $root = $('#' + rootId);
+
+        $root.find('.wt-modal-confirm').on('click', function () {
+            setPreference($root.find('.wt-modal-skip').prop('checked'));
+            closeRedirectDialog(rootId, eventNamespace);
+            redirect();
+        });
+
+        $root.find('.wt-modal-cancel, .wt-modal-overlay').on('click', function () {
+            closeRedirectDialog(rootId, eventNamespace);
+            if (typeof options.onCancel === 'function') options.onCancel();
+        });
+
+        $(document).on('keydown.' + eventNamespace, function (event) {
+            if (event.key === 'Escape') {
+                closeRedirectDialog(rootId, eventNamespace);
+                if (typeof options.onCancel === 'function') options.onCancel();
+            }
+        });
+    }
+
+    function buildSettingsMarkup(clearButtonId, bugButtonId) {
+        return `
+            <span class="wt-settings-wrap">
+                <button type="button" class="wt-settings-btn" aria-label="Paramètres" title="Paramètres">⚙</button>
+                <span class="wt-settings-popover" role="dialog" aria-label="Paramètres du script">
+                    <button type="button" id="${clearButtonId}" class="wt-settings-action wt-settings-delete">Supprimer les données enregistrées</button>
+                    <button type="button" id="${bugButtonId}" class="wt-settings-action wt-settings-bug">Signaler un bug</button>
+                </span>
+            </span>`;
+    }
+
+    function bindSettingsPopover(options) {
+        injectStyles();
+
+        const $container = $(options.containerSelector);
+        const $wrap = $container.find('.wt-settings-wrap');
+        const $popover = $wrap.find('.wt-settings-popover');
+        const $button = $wrap.find('.wt-settings-btn');
+        let closeTimer = null;
+
+        function cancelClose() {
+            if (closeTimer !== null) {
+                clearTimeout(closeTimer);
+                closeTimer = null;
+            }
+        }
+
+        function openPopover() {
+            cancelClose();
+            $wrap.addClass('is-open');
+        }
+
+        function scheduleClose() {
+            cancelClose();
+            closeTimer = setTimeout(function () {
+                $wrap.removeClass('is-open');
+                closeTimer = null;
+            }, SETTINGS_CLOSE_DELAY_MS);
+        }
+
+        $wrap
+            .off('.webiTimeSettings')
+            .on('mouseenter.webiTimeSettings', openPopover)
+            .on('mouseleave.webiTimeSettings', scheduleClose);
+
+        $popover
+            .off('.webiTimeSettings')
+            .on('mouseenter.webiTimeSettings', openPopover)
+            .on('mouseleave.webiTimeSettings', scheduleClose);
+
+        $button
+            .off('.webiTimeSettings')
+            .on('focus.webiTimeSettings click.webiTimeSettings', openPopover)
+            .on('blur.webiTimeSettings', scheduleClose);
+
+        $(options.bugButtonSelector).off('click.webiTimeSettings').on('click.webiTimeSettings', function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            cancelClose();
+            openPopover();
+            window.open(options.bugUrl, '_blank', 'noopener,noreferrer');
+        });
+
+        $(options.clearButtonSelector).off('click.webiTimeSettings').on('click.webiTimeSettings', function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            cancelClose();
+            openPopover();
+
+            if (typeof options.onClear === 'function') options.onClear();
+
+            $(this)
+                .addClass('is-cleared')
+                .prop('disabled', true)
+                .text('✓ Données supprimées');
+
+            if (typeof UI !== 'undefined' && UI.SuccessMessage) {
+                UI.SuccessMessage(options.successMessage || 'Données enregistrées supprimées.');
+            }
+        });
+    }
+
+    return Object.freeze({
+        theme,
+        injectStyles,
+        buildIssueUrl,
+        getStoredFlag,
+        setStoredFlag,
+        redirectToScreen,
+        showRedirectDialog,
+        buildSettingsMarkup,
+        bindSettingsPopover
+    });
+}
+
+const WEBITIME_UI = createWebiTimeSharedUi();
+const WEBITIME_RENAME_GITHUB_ISSUES_URL = WEBITIME_UI.buildIssueUrl('GT-RenameAttaqueSortante', WEBITIME_SOURCE_URL);
 
 function injectWebiTimeRenameStyles() {
+    WEBITIME_UI.injectStyles();
     if (document.getElementById(WEBITIME_RENAME_STYLE_ID)) return;
 
     const css = `
         :root {
-            --wtra-bg: #07111d;
-            --wtra-bg-soft: #0b1a2a;
-            --wtra-panel: rgba(8, 24, 39, .92);
-            --wtra-panel-2: rgba(10, 31, 50, .86);
-            --wtra-line: rgba(55, 220, 255, .34);
-            --wtra-cyan: #37dcff;
-            --wtra-cyan-2: #00b9f5;
-            --wtra-magenta: #ff42c8;
-            --wtra-orange: #ff7a2c;
-            --wtra-green: #43e7a3;
-            --wtra-red: #ff5b72;
-            --wtra-yellow: #ffc857;
-            --wtra-text: #eaf8ff;
-            --wtra-muted: #8eb5c9;
+            --wtra-bg: var(--webi-bg);
+            --wtra-bg-soft: var(--webi-bg-soft);
+            --wtra-panel: var(--webi-panel);
+            --wtra-panel-2: var(--webi-panel-2);
+            --wtra-line: var(--webi-line);
+            --wtra-cyan: var(--webi-cyan);
+            --wtra-cyan-2: var(--webi-cyan-2);
+            --wtra-magenta: var(--webi-magenta);
+            --wtra-orange: var(--webi-orange);
+            --wtra-green: var(--webi-green);
+            --wtra-red: var(--webi-red);
+            --wtra-yellow: var(--webi-yellow);
+            --wtra-text: var(--webi-text);
+            --wtra-muted: var(--webi-muted);
         }
 
         #openDiv.wtra-panel {
@@ -157,7 +696,7 @@ function injectWebiTimeRenameStyles() {
         .wtra-title {
             margin: 0;
             color: var(--wtra-text);
-            font-size: 24px;
+            font-size: var(--webi-font-title);
             font-weight: 800;
             line-height: 1.05;
             letter-spacing: .1px;
@@ -169,7 +708,7 @@ function injectWebiTimeRenameStyles() {
         .wtra-byline {
             margin-top: 5px;
             color: #d8eef8;
-            font-size: 13px;
+            font-size: var(--webi-font-small);
         }
 
         .wtra-byline b { color: var(--wtra-cyan); }
@@ -177,7 +716,7 @@ function injectWebiTimeRenameStyles() {
         .wtra-tagline {
             margin-top: 5px;
             color: var(--wtra-muted);
-            font-size: 13px;
+            font-size: var(--webi-font-small);
             letter-spacing: .15px;
         }
 
@@ -189,7 +728,7 @@ function injectWebiTimeRenameStyles() {
             border-left: 1px solid rgba(55,220,255,.35);
             text-align: right;
             color: #82dfff;
-            font-size: 11px;
+            font-size: var(--webi-font-footer);
             line-height: 1.7;
             letter-spacing: 1.15px;
             text-transform: uppercase;
@@ -205,7 +744,7 @@ function injectWebiTimeRenameStyles() {
             border-radius: 8px;
             background: linear-gradient(180deg, rgba(13,34,52,.84), rgba(7,21,35,.90));
             color: #cfe7f3;
-            font-size: 14px;
+            font-size: var(--webi-font-body);
             line-height: 1.5;
         }
 
@@ -226,7 +765,7 @@ function injectWebiTimeRenameStyles() {
             color: #eafaff !important;
             box-shadow: 0 0 11px rgba(55,220,255,.10), 0 1px 0 rgba(255,255,255,.06) inset !important;
             font-family: "Segoe UI", Arial, sans-serif !important;
-            font-size: 14px !important;
+            font-size: var(--webi-font-body) !important;
             font-weight: 750 !important;
             text-shadow: none !important;
             cursor: pointer !important;
@@ -258,7 +797,7 @@ function injectWebiTimeRenameStyles() {
             padding-top: 8px;
             border-top: 1px solid rgba(55,220,255,.16);
             color: #65879a;
-            font-size: 11px;
+            font-size: var(--webi-font-footer);
         }
 
         .wtra-footer-center {
@@ -276,6 +815,15 @@ function injectWebiTimeRenameStyles() {
         .wtra-footer-right b {
             color: var(--wtra-cyan);
         }
+
+
+        .wtra-footer-left {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            min-width: 0;
+        }
+
 
         .wtra-overlay {
             position: fixed;
@@ -354,7 +902,7 @@ function injectWebiTimeRenameStyles() {
             border-radius: 8px;
             background: linear-gradient(180deg, rgba(13,34,52,.84), rgba(7,21,35,.90));
             color: #cfe7f3;
-            font-size: 13px;
+            font-size: var(--webi-font-small);
             line-height: 1.3;
             cursor: pointer;
         }
@@ -381,14 +929,14 @@ function injectWebiTimeRenameStyles() {
 
         .wtra-types-toolbar-title {
             color: #d9f4ff;
-            font-size: 14px;
+            font-size: var(--webi-font-body);
             font-weight: 800;
         }
 
         .wtra-add.btn {
             min-height: 32px !important;
             padding: 5px 10px !important;
-            font-size: 12px !important;
+            font-size: var(--webi-font-compact) !important;
         }
 
         .wtra-types-head,
@@ -402,7 +950,7 @@ function injectWebiTimeRenameStyles() {
         .wtra-types-head {
             padding: 8px 11px 4px;
             color: #7ea5b8;
-            font-size: 11px;
+            font-size: var(--webi-font-footer);
             font-weight: 750;
             letter-spacing: .55px;
             text-transform: uppercase;
@@ -433,7 +981,7 @@ function injectWebiTimeRenameStyles() {
             color: #e9f9ff !important;
             box-shadow: 0 0 0 1px rgba(0,0,0,.22) inset !important;
             font-family: "Segoe UI", Arial, sans-serif !important;
-            font-size: 13px !important;
+            font-size: var(--webi-font-small) !important;
         }
 
         .wtra-input:focus {
@@ -481,13 +1029,14 @@ function injectWebiTimeRenameStyles() {
 
         .wtra-modal-footer-note {
             color: #7194a6;
-            font-size: 11px;
+            font-size: var(--webi-font-footer);
         }
 
         #close_popup.wtra-save.btn {
             min-width: 145px;
             margin: 0 !important;
         }
+
 
         @media (max-width: 720px) {
             .wtra-hero-motto { display: none; }
@@ -683,53 +1232,27 @@ class RemoteConfig_RemoteConfig extends Config_Config {
  
  }
 
-// Construit le contenu de la boite de redirection sans dépendre d'une fonction externe.
-// L'ancienne version appelait buildContent(), qui n'était pas définie dans le script.
-function buildRedirectContent(message, options = {}) {
-    const skipOption = options.skippableId
-        ? `
-            <div style="margin-top:12px;padding-top:10px;border-top:1px solid rgba(0,0,0,.12);">
-                <label style="display:flex;align-items:center;gap:7px;cursor:pointer;">
-                    <input type="checkbox" id="twcheese-suggest-redirect-skip">
-                    <span>Ne plus me demander et rediriger automatiquement la prochaine fois</span>
-                </label>
-            </div>`
-        : '';
-
-    return `<div>${message || ''}${skipOption}</div>`;
-}
-
+// Redirection commune Webi-Time : même composant et même comportement que GT Intel Villages.
 function suggestRedirect(options) {
     let { message, screen, screenName, uriParams, skippableId } = options;
     message = message || "{{Un génie a oublié d'écrire un message ici}}";
     screenName = screenName || "{{Nom de l'écran ici}}";
     uriParams = uriParams || {};
-    if (!screen) {
-        throw Error('Un écran doit être spécifié !');
-    }
 
-    if (skippableId && userConfig.get(skipKey(skippableId), false)) {
-        window.UI.InfoMessage(`Redirection vers <strong>${screenName}</strong>...`);
-        setTimeout(() => window.TribalWars.redirect(screen, uriParams), 200);        
-        return;
-    }    
+    if (!screen) throw Error('Un écran doit être spécifié !');
 
-    let buttonConfirm = {
-        text: 'Emmène-moi là-bas !',
-        callback: () => {
-            if (skippableId) {
-                let skipNextTime = $('#twcheese-suggest-redirect-skip').prop('checked');
-                userConfig.set(skipKey(skippableId), skipNextTime);
-            }
-            window.TribalWars.redirect(screen, uriParams);
+    WEBITIME_UI.showRedirectDialog({
+        rootId: 'webiTimeRedirectModalRoot',
+        eventNamespace: 'webiTimeRedirect',
+        title: 'Redirection vers ' + screenName,
+        message,
+        infoMessage: `Redirection vers <strong>${screenName}</strong>...`,
+        getPreference: () => skippableId ? userConfig.get(skipKey(skippableId), false) : false,
+        setPreference: enabled => {
+            if (skippableId) userConfig.set(skipKey(skippableId), enabled);
         },
-        confirm: true
-    };
-    let buttonCancel = {
-        text: 'Laisse tomber...',
-        callback: () => {}
-    };
-    window.UI.ConfirmationBox(buildRedirectContent(message, options), [buttonConfirm, buttonCancel], 'twcheese_suggest_redirect', true, true);
+        redirect: () => WEBITIME_UI.redirectToScreen(screen, uriParams)
+    });
 }
 
 function skipKey(skippableId) {
@@ -764,20 +1287,32 @@ function setProp(object, propPath, value) {
 function suggestRedirectToCommandsOverview() {
     suggestRedirect({
         message: `
-            <p style="font-size:14px;">Pour l'utiliser, tu dois être sur l'interface des ordres.</p>
-            <p style="font-size:12px;">Choisis l'onglet des troupes de retour, car seules ces unités peuvent ramener des ressources. :)</p>`,
+            <p>Pour l'utiliser, tu dois être sur l'interface des ordres.</p>
+            <p>Le script doit être lancé depuis l'onglet <strong>Attaques sortantes</strong>.</p>`,
         screen: 'overview_villages',
-        screenName: 'Commands Overview',
+        screenName: 'Ordres - Attaques sortantes',
         uriParams: {
-            mode: 'commands'
+            mode: 'commands',
+            type: 'attack'
         },
-        skippableId: 'Tool:OverviewHauls'
+        // Clé propre à ce script. La préférence est stockée dans localStorage
+        // sous twcheese.userConfig > suggestRedirect.skip.Tool:RenameAttaqueSortante.
+        skippableId: 'Tool:RenameAttaqueSortante'
     });
 }
 
 function atCommandsOverview() {
-    let here = document.location.href;
-    return here.includes('screen=overview_villages') && here.includes('mode=commands');
+    try {
+        const url = new URL(window.location.href);
+        return url.searchParams.get('screen') === 'overview_villages' &&
+               url.searchParams.get('mode') === 'commands' &&
+               url.searchParams.get('type') === 'attack';
+    } catch (_) {
+        const here = document.location.href;
+        return here.includes('screen=overview_villages') &&
+               here.includes('mode=commands') &&
+               here.includes('type=attack');
+    }
 }
 
 let userConfig = new Config_Config('twcheese.userConfig');
@@ -786,6 +1321,7 @@ let userConfig = new Config_Config('twcheese.userConfig');
 
 
 function run(){
+    injectWebiTimeRenameStyles();
     //-------------------------------------------------- Debut - Pour le changement de page --------------------------------------------------
     if (!atCommandsOverview()) {
             suggestRedirectToCommandsOverview();
@@ -843,7 +1379,10 @@ function drawStep1()
                     <button name="setup" id="showParameters" class="btn wtra-btn wtra-btn-secondary">⚙ ${translator('attackPerso')}</button>
                 </div>
                 <div class="wtra-footer">
-                    <span>Version ${WEBITIME_RENAME_VERSION}</span>
+                    <span class="wtra-footer-left">
+                        ${WEBITIME_UI.buildSettingsMarkup('wtra_clear_saved_data', 'wtra_report_bug')}
+                        <span>Version ${WEBITIME_RENAME_VERSION}</span>
+                    </span>
                     <span class="wtra-footer-center">Intelligence &nbsp;■&nbsp; Organisation &nbsp;■&nbsp; Supériorité</span>
                     <span class="wtra-footer-right">🐼 <b>Webi-Time</b> &nbsp;|&nbsp; réalisé par ${WEBITIME_RENAME_AUTHOR}</span>
                 </div>
@@ -853,6 +1392,46 @@ function drawStep1()
     $('#paged_view_content').prepend(html);
     handleShowParamBtn();
     handleProcessBtn();
+    handleInformationButton();
+}
+
+function clearSavedRenameData() {
+    // Configuration des types d'attaque et options de renommage.
+    document.cookie = 'twAttackConfig=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+
+    // Préférence de redirection : on ne supprime que la donnée de CE script,
+    // car twcheese.userConfig peut être partagé avec d'autres scripts.
+    try {
+        if (userConfig && userConfig.props) {
+            const redirect = userConfig.props.suggestRedirect;
+            const skip = redirect && redirect.skip;
+
+            if (skip && Object.prototype.hasOwnProperty.call(skip, 'Tool:RenameAttaqueSortante')) {
+                delete skip['Tool:RenameAttaqueSortante'];
+            }
+            if (skip && Object.keys(skip).length === 0) delete redirect.skip;
+            if (redirect && Object.keys(redirect).length === 0) delete userConfig.props.suggestRedirect;
+
+            userConfig._save();
+        }
+    } catch (error) {
+        console.warn('[Webi-Time Rename Attaques] Impossible de nettoyer la préférence de redirection.', error);
+    }
+
+    inputTable = [];
+    typeAttackTable = 2;
+    undefinedUnits = false;
+}
+
+function handleInformationButton() {
+    WEBITIME_UI.bindSettingsPopover({
+        containerSelector: '#openDiv',
+        clearButtonSelector: '#wtra_clear_saved_data',
+        bugButtonSelector: '#wtra_report_bug',
+        bugUrl: WEBITIME_RENAME_GITHUB_ISSUES_URL,
+        onClear: clearSavedRenameData,
+        successMessage: 'Données enregistrées supprimées.'
+    });
 }
 
 function putPopupInPage(popup_html, popup_container_html)
