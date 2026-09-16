@@ -6,7 +6,7 @@
 (function (window) {
     'use strict';
 
-    if (window.WebiTimeGT) return;
+    if (window.WebiTimeGT && typeof window.WebiTimeGT.injectResourceStyles === 'function') return;
     if (typeof window.jQuery === 'undefined') {
         throw new Error('[Webi-Time GT Common] jQuery est requis.');
     }
@@ -15,6 +15,7 @@
 
 function createWebiTimeSharedUi() {
         const STYLE_ID = 'webiTimeSharedUiStyle';
+        const STYLE_REVISION = '1.1-resource-ui';
         const SETTINGS_CLOSE_DELAY_MS = 800;
 
         const theme = Object.freeze({
@@ -45,10 +46,13 @@ function createWebiTimeSharedUi() {
         });
 
         function injectStyles() {
-            if (document.getElementById(STYLE_ID)) return;
+            const existing = document.getElementById(STYLE_ID);
+            if (existing && existing.dataset.webiRevision === STYLE_REVISION) return;
+            if (existing) existing.remove();
 
             const style = document.createElement('style');
             style.id = STYLE_ID;
+            style.dataset.webiRevision = STYLE_REVISION;
             style.textContent = `
                 :root {
                     --webi-bg: ${theme.colors.bg};
@@ -324,6 +328,46 @@ function createWebiTimeSharedUi() {
                     cursor: default;
                 }
 
+                .wt-modal-actions-single {
+                    grid-template-columns: 1fr;
+                }
+
+                .wt-progress-modal {
+                    width: min(520px, calc(100vw - 36px));
+                }
+
+                .wt-progress-meta {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 12px;
+                    margin: 14px 1px 6px;
+                    color: #b9dbe8;
+                    font-size: var(--webi-font-compact);
+                }
+
+                .wt-progress-count {
+                    color: var(--webi-cyan);
+                    font-variant-numeric: tabular-nums;
+                }
+
+                .wt-progress-track {
+                    height: 8px;
+                    overflow: hidden;
+                    border: 1px solid rgba(55,220,255,.28);
+                    border-radius: 99px;
+                    background: rgba(0,0,0,.34);
+                }
+
+                .wt-progress-bar {
+                    width: 0;
+                    height: 100%;
+                    border-radius: inherit;
+                    background: linear-gradient(90deg, var(--webi-cyan-2), var(--webi-cyan), var(--webi-magenta));
+                    box-shadow: 0 0 12px rgba(55,220,255,.35);
+                    transition: width .18s ease;
+                }
+
                 @media (max-width: 560px) {
                     .wt-modal-actions { grid-template-columns: 1fr; }
                 }
@@ -448,6 +492,100 @@ function createWebiTimeSharedUi() {
                 if (event.key === 'Escape') {
                     closeRedirectDialog(rootId, eventNamespace);
                     if (typeof options.onCancel === 'function') options.onCancel();
+                }
+            });
+        }
+
+        function showMessageDialog(options = {}) {
+            injectStyles();
+
+            const rootId = options.rootId || 'webiTimeMessageModalRoot';
+            const eventNamespace = options.eventNamespace || 'webiTimeMessage';
+            const title = options.title || 'Information';
+            const message = options.message || '';
+            const buttonText = options.buttonText || 'Fermer';
+
+            closeRedirectDialog(rootId, eventNamespace);
+
+            return new Promise(resolve => {
+                const modal = `
+                    <div id="${rootId}" class="wt-modal-root">
+                        <div class="wt-modal-overlay"></div>
+                        <div class="wt-modal-wrap">
+                            <div class="wt-modal" role="dialog" aria-modal="true">
+                                <div class="wt-modal-content">
+                                    <div class="wt-modal-title">${title}</div>
+                                    <div class="wt-modal-text">${message}</div>
+                                    <div class="wt-modal-actions wt-modal-actions-single">
+                                        <button type="button" class="wt-modal-btn wt-modal-ack">${buttonText}</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+
+                $('body').append(modal);
+                const $root = $('#' + rootId);
+
+                const close = () => {
+                    closeRedirectDialog(rootId, eventNamespace);
+                    resolve();
+                };
+
+                $root.find('.wt-modal-ack, .wt-modal-overlay').on('click', close);
+                $(document).on('keydown.' + eventNamespace, event => {
+                    if (event.key === 'Escape') close();
+                });
+            });
+        }
+
+        function showProgressDialog(options = {}) {
+            injectStyles();
+
+            const rootId = options.rootId || 'webiTimeProgressModalRoot';
+            const eventNamespace = options.eventNamespace || 'webiTimeProgress';
+            const title = options.title || 'Chargement';
+            const message = options.message || 'Traitement en cours...';
+
+            closeRedirectDialog(rootId, eventNamespace);
+
+            const modal = `
+                <div id="${rootId}" class="wt-modal-root">
+                    <div class="wt-modal-overlay"></div>
+                    <div class="wt-modal-wrap">
+                        <div class="wt-modal wt-progress-modal" role="dialog" aria-modal="true" aria-live="polite">
+                            <div class="wt-modal-content">
+                                <div class="wt-modal-title">${title}</div>
+                                <div class="wt-modal-text wt-progress-message">${message}</div>
+                                <div class="wt-progress-meta">
+                                    <span class="wt-progress-label">Préparation...</span>
+                                    <span class="wt-progress-count">0/0</span>
+                                </div>
+                                <div class="wt-progress-track">
+                                    <div class="wt-progress-bar"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+
+            $('body').append(modal);
+            const $root = $('#' + rootId);
+
+        return Object.freeze({
+                update(current, total, label) {
+                    const safeCurrent = Number.isFinite(Number(current)) ? Number(current) : 0;
+                    const safeTotal = Number.isFinite(Number(total)) ? Number(total) : 0;
+                    const pct = safeTotal > 0 ? Math.max(0, Math.min(100, Math.round((safeCurrent / safeTotal) * 100))) : 0;
+                    $root.find('.wt-progress-bar').css('width', pct + '%');
+                    $root.find('.wt-progress-count').text(`${safeCurrent}/${safeTotal}`);
+                    if (label) $root.find('.wt-progress-label').text(label);
+                },
+                setMessage(html) {
+                    $root.find('.wt-progress-message').html(html || '');
+                },
+                close() {
+                    closeRedirectDialog(rootId, eventNamespace);
                 }
             });
         }
@@ -1585,6 +1723,386 @@ function createWebiTimeSharedUi() {
     `);
         }
 
+        function injectResourceStyles(styleId = 'webiTimeIncomingResourcesStyle') {
+        injectStyleTag(styleId, `
+            #twcheese_pillaging_stats.wtri-panel {
+                --wtri-cyan: var(--webi-cyan);
+                --wtri-cyan-2: var(--webi-cyan-2);
+                --wtri-magenta: var(--webi-magenta);
+                --wtri-orange: var(--webi-orange);
+                --wtri-green: var(--webi-green);
+                --wtri-red: var(--webi-red);
+                --wtri-text: var(--webi-text);
+                --wtri-muted: var(--webi-muted);
+
+                position: relative;
+                margin: 12px 0 16px;
+                overflow: visible;
+                border: 1px solid rgba(55,220,255,.68);
+                border-radius: 13px;
+                background:
+                    radial-gradient(circle at 10% -20%, rgba(0,196,255,.22), transparent 34%),
+                    radial-gradient(circle at 86% 0%, rgba(255,66,200,.16), transparent 28%),
+                    radial-gradient(circle at 95% 115%, rgba(255,122,44,.12), transparent 30%),
+                    linear-gradient(180deg, #07111d 0%, #081725 52%, #06101a 100%);
+                box-shadow:
+                    0 0 0 1px rgba(0,0,0,.55) inset,
+                    0 0 24px rgba(0,177,238,.16),
+                    0 7px 18px rgba(15,12,25,.30);
+                color: var(--wtri-text);
+                font-family: "Segoe UI", Arial, sans-serif;
+            }
+
+            #twcheese_pillaging_stats.wtri-panel::before {
+                content: "";
+                position: absolute;
+                z-index: 0;
+                inset: 0;
+                border-radius: inherit;
+                pointer-events: none;
+                opacity: .30;
+                background-image:
+                    linear-gradient(rgba(55,220,255,.035) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(55,220,255,.035) 1px, transparent 1px);
+                background-size: 26px 26px;
+            }
+
+            #twcheese_pillaging_stats.wtri-panel > * {
+                position: relative;
+                z-index: 1;
+            }
+
+            #twcheese_pillaging_stats .wtri-hero {
+                position: relative;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 16px;
+                min-height: 88px;
+                padding: 15px 18px;
+                overflow: hidden;
+                border-radius: 12px 12px 0 0;
+                border-bottom: 1px solid rgba(55,220,255,.42);
+                background: linear-gradient(115deg, rgba(5,17,29,.96) 0%, rgba(7,32,51,.92) 54%, rgba(34,9,43,.88) 100%);
+            }
+
+            #twcheese_pillaging_stats .wtri-hero::after {
+                content: "";
+                position: absolute;
+                width: 390px;
+                height: 180px;
+                right: -80px;
+                top: -70px;
+                transform: rotate(-9deg);
+                background:
+                    radial-gradient(circle at 35% 50%, rgba(255,66,200,.24), transparent 32%),
+                    radial-gradient(circle at 65% 45%, rgba(55,220,255,.21), transparent 35%);
+                filter: blur(4px);
+                pointer-events: none;
+            }
+
+            #twcheese_pillaging_stats .wtri-brand {
+                display: flex;
+                align-items: center;
+                gap: 13px;
+                min-width: 0;
+            }
+
+            #twcheese_pillaging_stats .wtri-logo {
+                position: relative;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex: 0 0 62px;
+                width: 62px;
+                height: 62px;
+                border: 1px solid rgba(55,220,255,.65);
+                border-radius: 16px;
+                background:
+                    radial-gradient(circle at 50% 35%, rgba(55,220,255,.20), transparent 44%),
+                    linear-gradient(145deg, rgba(6,22,37,.96), rgba(13,8,27,.96));
+                box-shadow: 0 0 17px rgba(55,220,255,.22), 0 0 28px rgba(255,66,200,.10) inset;
+                font-size: 36px;
+                line-height: 1;
+            }
+
+            #twcheese_pillaging_stats .wtri-logo::after {
+                content: "";
+                position: absolute;
+                left: 8px;
+                right: 8px;
+                bottom: 5px;
+                height: 2px;
+                border-radius: 2px;
+                background: linear-gradient(90deg, transparent, var(--wtri-cyan), var(--wtri-magenta), transparent);
+                box-shadow: 0 0 8px rgba(55,220,255,.7);
+            }
+
+            #twcheese_pillaging_stats .wtri-title {
+                margin: 0;
+                color: var(--wtri-text);
+                font-size: var(--webi-font-title);
+                font-weight: 800;
+                line-height: 1.05;
+                letter-spacing: .1px;
+            }
+
+            #twcheese_pillaging_stats .wtri-title-webi { color: var(--wtri-cyan); }
+            #twcheese_pillaging_stats .wtri-title-tool { color: var(--wtri-magenta); }
+
+            #twcheese_pillaging_stats .wtri-byline {
+                margin-top: 5px;
+                color: #d8eef8;
+                font-size: var(--webi-font-small);
+            }
+
+            #twcheese_pillaging_stats .wtri-byline b { color: var(--wtri-cyan); }
+
+            #twcheese_pillaging_stats .wtri-tagline {
+                margin-top: 5px;
+                color: var(--wtri-muted);
+                font-size: var(--webi-font-small);
+                letter-spacing: .15px;
+            }
+
+            #twcheese_pillaging_stats .wtri-hero-motto {
+                position: relative;
+                z-index: 2;
+                flex: 0 0 auto;
+                padding-left: 15px;
+                border-left: 1px solid rgba(55,220,255,.35);
+                text-align: right;
+                color: #82dfff;
+                font-size: var(--webi-font-footer);
+                line-height: 1.7;
+                letter-spacing: 1.15px;
+                text-transform: uppercase;
+            }
+
+            #twcheese_pillaging_stats .wtri-body { padding: 13px; }
+
+            #twcheese_pillaging_stats .wtri-summary {
+                display: grid;
+                grid-template-columns: minmax(260px, .9fr) minmax(360px, 1.6fr);
+                gap: 10px;
+                align-items: stretch;
+            }
+
+            #twcheese_pillaging_stats .wtri-card {
+                min-width: 0;
+                padding: 10px 11px;
+                box-sizing: border-box;
+                border: 1px solid rgba(55,220,255,.20);
+                border-radius: 8px;
+                background: linear-gradient(180deg, rgba(13,34,52,.84), rgba(7,21,35,.90));
+            }
+
+            #twcheese_pillaging_stats .wtri-card-title {
+                display: block;
+                margin-bottom: 7px;
+                color: #b9d7e6;
+                font-size: var(--webi-font-compact);
+                font-weight: 700;
+                letter-spacing: .5px;
+                text-transform: uppercase;
+            }
+
+            #twcheese_pillaging_stats .wtri-range {
+                display: grid;
+                grid-template-columns: auto minmax(110px,1fr) auto minmax(110px,1fr);
+                align-items: center;
+                gap: 7px;
+                color: #9fc1d1;
+                font-size: var(--webi-font-small);
+            }
+
+            #twcheese_pillaging_stats .wtri-range select {
+                width: 100%;
+                height: 31px;
+                box-sizing: border-box;
+                border: 1px solid rgba(55,220,255,.40);
+                border-radius: 6px;
+                outline: none;
+                background: #091a2a;
+                color: #e9f9ff;
+                padding: 3px 8px;
+                font-family: "Segoe UI", Arial, sans-serif;
+                font-size: var(--webi-font-small);
+            }
+
+            #twcheese_pillaging_stats .wtri-range select:focus {
+                border-color: var(--wtri-cyan);
+                box-shadow: 0 0 10px rgba(55,220,255,.18);
+            }
+
+            #twcheese_pillaging_stats .wtri-results {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-wrap: wrap;
+                gap: 9px 15px;
+                min-height: 42px;
+                color: #eaf8ff;
+                font-size: var(--webi-font-body);
+                font-variant-numeric: tabular-nums;
+            }
+
+            #twcheese_pillaging_stats .wtri-result-item {
+                display: inline-flex;
+                align-items: center;
+                gap: 5px;
+                white-space: nowrap;
+            }
+
+            #twcheese_pillaging_stats .wtri-result-item img,
+            #twcheese_pillaging_stats .wtri-table img {
+                width: 18px;
+                height: 18px;
+                vertical-align: middle;
+            }
+
+            #twcheese_pillaging_stats .wtri-result-performance {
+                color: #9fdced;
+                white-space: nowrap;
+            }
+
+            #twcheese_pillaging_stats .wtri-table-card {
+                margin-top: 10px;
+                overflow: hidden;
+                border: 1px solid rgba(55,220,255,.20);
+                border-radius: 8px;
+                background: rgba(3,13,22,.76);
+            }
+
+            #twcheese_pillaging_stats .wtri-table-head {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 10px;
+                padding: 8px 10px;
+                border-bottom: 1px solid rgba(55,220,255,.15);
+                background: rgba(9,29,45,.74);
+            }
+
+            #twcheese_pillaging_stats .wtri-table-title {
+                color: #d9f4ff;
+                font-size: var(--webi-font-small);
+                font-weight: 700;
+            }
+
+            #twcheese_pillaging_stats .wtri-collapse {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 26px;
+                height: 26px;
+                padding: 0;
+                border: 1px solid rgba(55,220,255,.34);
+                border-radius: 6px;
+                background: rgba(5,24,38,.92);
+                cursor: pointer;
+            }
+
+            #twcheese_pillaging_stats .wtri-collapse:hover {
+                border-color: var(--wtri-cyan);
+                box-shadow: 0 0 10px rgba(55,220,255,.16);
+            }
+
+            #twcheese_pillaging_stats .wtri-collapse img {
+                width: 12px;
+                height: 12px;
+            }
+
+            #twcheese_pillaging_stats .wtri-table-wrap {
+                max-height: 360px;
+                overflow: auto;
+                scrollbar-color: #1e6c8a #07111d;
+                scrollbar-width: thin;
+            }
+
+            #twcheese_pillaging_stats .wtri-table {
+                width: 100%;
+                border-collapse: collapse;
+                color: #cfe7f3;
+                font-size: var(--webi-font-small);
+                font-variant-numeric: tabular-nums;
+            }
+
+            #twcheese_pillaging_stats .wtri-table th {
+                position: sticky;
+                top: 0;
+                z-index: 1;
+                padding: 8px 9px;
+                border-bottom: 1px solid rgba(55,220,255,.18);
+                background: #0b1d2c;
+                color: #b9d7e6;
+                text-align: center;
+                font-weight: 700;
+            }
+
+            #twcheese_pillaging_stats .wtri-table td {
+                padding: 7px 9px;
+                border-bottom: 1px solid rgba(55,220,255,.08);
+                background: rgba(7,21,35,.54);
+                text-align: center;
+            }
+
+            #twcheese_pillaging_stats .wtri-table tbody tr:nth-child(even) td {
+                background: rgba(12,34,52,.54) !important;
+            }
+
+            #twcheese_pillaging_stats .wtri-table tbody tr:hover td {
+                background: rgba(16,49,70,.72) !important;
+            }
+
+            #twcheese_pillaging_stats .wtri-footer {
+                display: grid;
+                grid-template-columns: 1fr auto 1fr;
+                align-items: center;
+                gap: 10px;
+                margin-top: 10px;
+                padding-top: 8px;
+                border-top: 1px solid rgba(55,220,255,.16);
+                color: #65879a;
+                font-size: var(--webi-font-footer);
+            }
+
+            #twcheese_pillaging_stats .wtri-footer-left {
+                display: flex;
+                align-items: center;
+                gap: 7px;
+                min-width: 0;
+            }
+
+            #twcheese_pillaging_stats .wtri-footer-center {
+                color: #76a8bd;
+                letter-spacing: 2px;
+                text-transform: uppercase;
+                white-space: nowrap;
+            }
+
+            #twcheese_pillaging_stats .wtri-footer-right {
+                text-align: right;
+                color: #9ebdca;
+            }
+
+            #twcheese_pillaging_stats .wtri-footer-right b { color: var(--wtri-cyan); }
+
+            @media (max-width: 900px) {
+                #twcheese_pillaging_stats .wtri-summary { grid-template-columns: 1fr; }
+            }
+
+            @media (max-width: 680px) {
+                #twcheese_pillaging_stats .wtri-hero-motto { display: none; }
+                #twcheese_pillaging_stats .wtri-title { font-size: 20px; }
+                #twcheese_pillaging_stats .wtri-range { grid-template-columns: 1fr; }
+                #twcheese_pillaging_stats .wtri-range-label { display: none; }
+                #twcheese_pillaging_stats .wtri-footer { grid-template-columns: 1fr; text-align: center; }
+                #twcheese_pillaging_stats .wtri-footer-right { text-align: center; }
+            }
+        `);
+    }
+
         return Object.freeze({
             theme,
             injectStyles,
@@ -1593,10 +2111,13 @@ function createWebiTimeSharedUi() {
             setStoredFlag,
             redirectToScreen,
             showRedirectDialog,
+            showMessageDialog,
+            showProgressDialog,
             buildSettingsMarkup,
             bindSettingsPopover,
             injectIntelStyles,
-            injectRenameStyles
+            injectRenameStyles,
+            injectResourceStyles
         });
     }
 
