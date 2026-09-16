@@ -681,7 +681,24 @@ class RemoteConfig_RemoteConfig extends Config_Config {
          });
      }
  
+ }
+
+// Construit le contenu de la boite de redirection sans dépendre d'une fonction externe.
+// L'ancienne version appelait buildContent(), qui n'était pas définie dans le script.
+function buildRedirectContent(message, options = {}) {
+    const skipOption = options.skippableId
+        ? `
+            <div style="margin-top:12px;padding-top:10px;border-top:1px solid rgba(0,0,0,.12);">
+                <label style="display:flex;align-items:center;gap:7px;cursor:pointer;">
+                    <input type="checkbox" id="twcheese-suggest-redirect-skip">
+                    <span>Ne plus me demander et rediriger automatiquement la prochaine fois</span>
+                </label>
+            </div>`
+        : '';
+
+    return `<div>${message || ''}${skipOption}</div>`;
 }
+
 function suggestRedirect(options) {
     let { message, screen, screenName, uriParams, skippableId } = options;
     message = message || "{{Un génie a oublié d'écrire un message ici}}";
@@ -712,7 +729,7 @@ function suggestRedirect(options) {
         text: 'Laisse tomber...',
         callback: () => {}
     };
-    window.UI.ConfirmationBox(buildContent(message, options), [buttonConfirm, buttonCancel], 'twcheese_suggest_redirect', true, true);
+    window.UI.ConfirmationBox(buildRedirectContent(message, options), [buttonConfirm, buttonCancel], 'twcheese_suggest_redirect', true, true);
 }
 
 function skipKey(skippableId) {
@@ -804,7 +821,7 @@ function drawStep1()
                         <div class="wtra-title">
                             <span class="wtra-title-webi">Webi-Time</span><span class="wtra-title-tool"> Rename Attaques</span>
                         </div>
-                        <div class="wtra-byline">Par <b>${WEBITIME_RENAME_AUTHOR}</b> &nbsp;•&nbsp; Gestion des attaques sortantes</div>
+                        <div class="wtra-byline">par <b>${WEBITIME_RENAME_AUTHOR}</b> &nbsp;•&nbsp; gestion des attaques sortantes</div>
                         <div class="wtra-tagline">Des ordres propres. Des timings lisibles. Une vue plus efficace.</div>
                     </div>
                 </div>
