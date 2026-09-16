@@ -2,7 +2,6 @@
  * Webi-Time GT Common UI
  * Styles et composants partagés par les scripts Guerre Tribale Webi-Time.
  * Réalisé par NoLife4Ever / Webi-Time
- * UI revision: minimal-2026
  */
 (function (window) {
     'use strict';
@@ -20,28 +19,28 @@ function createWebiTimeSharedUi() {
 
         const theme = Object.freeze({
             colors: Object.freeze({
-                bg: '#0b1016',
-                bgSoft: '#111820',
-                panel: 'rgba(13, 20, 28, .96)',
-                panel2: 'rgba(17, 26, 36, .94)',
-                line: 'rgba(148, 163, 184, .18)',
-                cyan: '#5fd3ea',
-                cyan2: '#38b9d6',
-                magenta: '#b68cff',
-                orange: '#f0a45d',
-                green: '#55d6a6',
-                red: '#f07486',
-                yellow: '#e9c46a',
-                text: '#e7edf4',
-                muted: '#91a0b2'
+                bg: '#07111d',
+                bgSoft: '#0b1a2a',
+                panel: 'rgba(8, 24, 39, .92)',
+                panel2: 'rgba(10, 31, 50, .86)',
+                line: 'rgba(55, 220, 255, .34)',
+                cyan: '#37dcff',
+                cyan2: '#00b9f5',
+                magenta: '#ff42c8',
+                orange: '#ff7a2c',
+                green: '#43e7a3',
+                red: '#ff5b72',
+                yellow: '#ffc857',
+                text: '#eaf8ff',
+                muted: '#8eb5c9'
             }),
             fonts: Object.freeze({
-                title: '22px',
+                title: '24px',
                 body: '14px',
                 small: '13px',
                 compact: '12px',
                 footer: '11px',
-                modalTitle: '18px'
+                modalTitle: '19px'
             })
         });
 
@@ -72,12 +71,6 @@ function createWebiTimeSharedUi() {
                     --webi-font-compact: ${theme.fonts.compact};
                     --webi-font-footer: ${theme.fonts.footer};
                     --webi-font-modal-title: ${theme.fonts.modalTitle};
-                    --webi-radius: 10px;
-                    --webi-radius-sm: 7px;
-                    --webi-surface: rgba(8, 25, 40, .88);
-                    --webi-surface-soft: rgba(10, 31, 49, .72);
-                    --webi-separator: rgba(55, 220, 255, .13);
-                    --webi-border: rgba(55, 220, 255, .24);
                 }
 
                 .wt-modal-root {
@@ -334,34 +327,6 @@ function createWebiTimeSharedUi() {
                 @media (max-width: 560px) {
                     .wt-modal-actions { grid-template-columns: 1fr; }
                 }
-
-                /* Webi-Time 2026 — composants communs sobres */
-                .wt-modal-root,.wt-modal,.wt-settings-popover,.wt-settings-btn,.wt-settings-action {
-                    font-family:"Segoe UI Variable","Segoe UI",system-ui,-apple-system,sans-serif;
-                }
-                .wt-modal-overlay { background:rgba(3,7,12,.66); backdrop-filter:blur(5px); }
-                .wt-modal {
-                    border:1px solid rgba(148,163,184,.22); border-radius:14px;
-                    background:#101720; box-shadow:0 20px 55px rgba(0,0,0,.42);
-                }
-                .wt-modal::before { display:none; }
-                .wt-modal-content { padding:20px; }
-                .wt-modal-title { color:var(--webi-text); font-weight:700; letter-spacing:-.2px; }
-                .wt-modal-text,.wt-modal-option {
-                    border-color:rgba(148,163,184,.14); background:#0d141c; color:#cbd5e1; box-shadow:none;
-                }
-                .wt-modal-btn {
-                    border-color:rgba(95,211,234,.34); background:#15313d; color:#e8f7fa;
-                    box-shadow:none; font-weight:650; transition:.15s ease;
-                }
-                .wt-modal-btn:hover { border-color:rgba(95,211,234,.68); background:#1a3b49; box-shadow:none; transform:translateY(-1px); }
-                .wt-modal-btn.secondary { border-color:rgba(148,163,184,.18); background:#151b24; color:#cbd5e1; }
-                .wt-modal-btn.secondary:hover { border-color:rgba(182,140,255,.46); background:#1b202b; box-shadow:none; }
-                .wt-settings-btn { border-color:rgba(148,163,184,.22); background:#111923; color:#aab7c5; box-shadow:none; }
-                .wt-settings-btn:hover,.wt-settings-btn:focus { border-color:rgba(95,211,234,.48); background:#17222d; color:#dce8ef; box-shadow:none; }
-                .wt-settings-popover { border-color:rgba(148,163,184,.20); background:#111820; box-shadow:0 14px 34px rgba(0,0,0,.36); }
-                .wt-settings-action { border-radius:7px; box-shadow:none !important; font-weight:650; }
-
             `;
             document.head.appendChild(style);
         }
@@ -602,17 +567,17 @@ function createWebiTimeSharedUi() {
                     position: relative;
                     margin: 12px 0 16px 0;
                     overflow: hidden;
-                    border: 1px solid rgba(55, 220, 255, .48);
-                    border-radius: 12px;
+                    border: 1px solid rgba(55, 220, 255, .68);
+                    border-radius: 13px;
                     background:
                         radial-gradient(circle at 10% -20%, rgba(0, 196, 255, .22), transparent 34%),
                         radial-gradient(circle at 86% 0%, rgba(255, 66, 200, .16), transparent 28%),
                         radial-gradient(circle at 95% 115%, rgba(255, 122, 44, .14), transparent 30%),
                         linear-gradient(180deg, #07111d 0%, #081725 52%, #06101a 100%);
                     box-shadow:
-                        0 0 0 1px rgba(0, 0, 0, .48) inset,
-                        0 10px 26px rgba(0, 0, 0, .30),
-                        0 0 18px rgba(0, 177, 238, .10);
+                        0 0 0 1px rgba(0, 0, 0, .55) inset,
+                        0 0 24px rgba(0, 177, 238, .16),
+                        0 7px 18px rgba(15, 12, 25, .30);
                     color: var(--wt-text);
                     font-family: "Segoe UI", Arial, sans-serif;
                 }
@@ -641,10 +606,10 @@ function createWebiTimeSharedUi() {
                     align-items: center;
                     justify-content: space-between;
                     gap: 16px;
-                    min-height: 86px;
-                    padding: 14px 16px;
+                    min-height: 92px;
+                    padding: 15px 18px;
                     overflow: hidden;
-                    border-bottom: 1px solid rgba(55, 220, 255, .28);
+                    border-bottom: 1px solid rgba(55, 220, 255, .42);
                     background:
                         linear-gradient(115deg, rgba(5,17,29,.96) 0%, rgba(7,32,51,.92) 54%, rgba(34,9,43,.88) 100%);
                 }
@@ -752,35 +717,28 @@ function createWebiTimeSharedUi() {
                 }
 
                 #${BOX_ID} .gtiv-body {
-                    padding: 12px;
-                    background: linear-gradient(180deg, rgba(4,16,27,.18), rgba(2,11,19,.34));
+                    padding: 13px;
                 }
 
                 #${BOX_ID} .gtiv-controls {
                     display: grid;
                     grid-template-columns: minmax(170px, 1.05fr) minmax(170px, 1.05fr) minmax(260px, 1.45fr) minmax(170px, .85fr);
-                    gap: 1px;
+                    gap: 9px;
                     align-items: stretch;
-                    overflow: hidden;
-                    padding: 1px;
-                    border: 1px solid var(--webi-border);
-                    border-radius: var(--webi-radius);
-                    background: var(--webi-separator);
-                    box-shadow: 0 6px 18px rgba(0,0,0,.16);
                 }
 
                 #${BOX_ID} .gtiv-card,
                 #${BOX_ID} .gtiv-action {
                     min-width: 0;
                     box-sizing: border-box;
-                    border: 0;
-                    border-radius: 0;
-                    background: linear-gradient(180deg, rgba(12,34,52,.88), rgba(7,21,35,.94));
-                    box-shadow: none;
+                    border: 1px solid rgba(55,220,255,.20);
+                    border-radius: 8px;
+                    background: linear-gradient(180deg, rgba(13,34,52,.84), rgba(7,21,35,.90));
+                    box-shadow: 0 1px 0 rgba(255,255,255,.025) inset;
                 }
 
                 #${BOX_ID} .gtiv-card {
-                    padding: 10px 11px;
+                    padding: 9px 10px;
                 }
 
                 #${BOX_ID} .gtiv-card-title {
@@ -848,10 +806,10 @@ function createWebiTimeSharedUi() {
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    padding: 9px;
+                    padding: 8px;
                     background:
-                        radial-gradient(circle at 50% 0%, rgba(55,220,255,.08), transparent 62%),
-                        linear-gradient(180deg, rgba(9,28,44,.94), rgba(5,17,29,.97));
+                        radial-gradient(circle at 50% 0%, rgba(55,220,255,.10), transparent 60%),
+                        linear-gradient(180deg, rgba(9,27,43,.90), rgba(5,17,29,.95));
                 }
 
                 #${BOX_ID} .gtiv-run.btn {
@@ -884,7 +842,7 @@ function createWebiTimeSharedUi() {
                 }
 
                 #${BOX_ID} .gtiv-progress {
-                    margin-top: 8px;
+                    margin-top: 10px;
                     padding: 8px 10px;
                     border: 1px solid rgba(55,220,255,.20);
                     border-radius: 8px;
@@ -920,13 +878,8 @@ function createWebiTimeSharedUi() {
                 #${BOX_ID} .gtiv-stats {
                     display: grid;
                     grid-template-columns: repeat(7, minmax(90px, 1fr));
-                    gap: 1px;
-                    margin-top: 8px;
-                    overflow: hidden;
-                    padding: 1px;
-                    border: 1px solid rgba(55,220,255,.18);
-                    border-radius: var(--webi-radius);
-                    background: var(--webi-separator);
+                    gap: 7px;
+                    margin-top: 10px;
                 }
 
                 #${BOX_ID} .gtiv-stat {
@@ -934,9 +887,9 @@ function createWebiTimeSharedUi() {
                     min-width: 0;
                     padding: 9px 7px 8px;
                     overflow: hidden;
-                    border: 0;
-                    border-radius: 0;
-                    background: linear-gradient(180deg, rgba(11,32,49,.86), rgba(6,19,32,.94));
+                    border: 1px solid rgba(55,220,255,.17);
+                    border-radius: 8px;
+                    background: linear-gradient(180deg, rgba(12,34,52,.78), rgba(6,19,32,.90));
                     text-align: center;
                 }
 
@@ -1002,7 +955,7 @@ function createWebiTimeSharedUi() {
                 }
 
                 #${BOX_ID} .gtiv-log-section {
-                    margin-top: 8px;
+                    margin-top: 10px;
                     overflow: hidden;
                     border: 1px solid rgba(55,220,255,.20);
                     border-radius: 8px;
@@ -1104,10 +1057,9 @@ function createWebiTimeSharedUi() {
                     grid-template-columns: 1fr auto 1fr;
                     align-items: center;
                     gap: 10px;
-                    margin: 10px -12px -12px;
-                    padding: 9px 12px 10px;
-                    border-top: 1px solid rgba(55,220,255,.14);
-                    background: rgba(3,14,24,.54);
+                    margin-top: 10px;
+                    padding-top: 8px;
+                    border-top: 1px solid rgba(55,220,255,.16);
                     color: #65879a;
                     font-size: var(--webi-font-footer);
                 }
@@ -1145,56 +1097,6 @@ function createWebiTimeSharedUi() {
                     #${BOX_ID} .gtiv-footer { grid-template-columns: 1fr; text-align: center; }
                     #${BOX_ID} .gtiv-footer-right { text-align: center; }
                 }
-
-                /* Intel Villages — Webi-Time 2026 minimal */
-                #${BOX_ID} {
-                    margin:12px 0 16px; border:1px solid rgba(148,163,184,.20); border-radius:14px;
-                    background:#0d141c; box-shadow:0 12px 30px rgba(0,0,0,.20); color:var(--webi-text);
-                    font-family:"Segoe UI Variable","Segoe UI",system-ui,-apple-system,sans-serif;
-                }
-                #${BOX_ID}::before,#${BOX_ID} .gtiv-hero::after,#${BOX_ID} .gtiv-logo::after { display:none; }
-                #${BOX_ID} .gtiv-hero { min-height:68px; padding:13px 16px; border-bottom:1px solid rgba(148,163,184,.14); background:#101821; }
-                #${BOX_ID} .gtiv-brand { gap:11px; }
-                #${BOX_ID} .gtiv-logo { flex-basis:44px; width:44px; height:44px; border:1px solid rgba(148,163,184,.18); border-radius:11px; background:#0b1219; box-shadow:none; font-size:27px; }
-                #${BOX_ID} .gtiv-title { font-size:var(--webi-font-title); font-weight:700; letter-spacing:-.35px; text-shadow:none; }
-                #${BOX_ID} .gtiv-title-webi { color:#dce7ef; }
-                #${BOX_ID} .gtiv-title-intel { color:var(--webi-cyan); }
-                #${BOX_ID} .gtiv-byline,#${BOX_ID} .gtiv-tagline { margin-top:3px; color:#8292a5; font-size:var(--webi-font-small); }
-                #${BOX_ID} .gtiv-byline b { color:#b7c8d5; }
-                #${BOX_ID} .gtiv-hero-motto { padding-left:14px; border-left:1px solid rgba(148,163,184,.14); color:#68798b; font-size:10px; line-height:1.55; letter-spacing:.85px; }
-                #${BOX_ID} .gtiv-body { padding:12px; }
-                #${BOX_ID} .gtiv-controls { gap:0; overflow:hidden; border:1px solid rgba(148,163,184,.15); border-radius:10px; background:#101821; }
-                #${BOX_ID} .gtiv-card,#${BOX_ID} .gtiv-action { border:0; border-right:1px solid rgba(148,163,184,.12); border-radius:0; background:transparent; box-shadow:none; }
-                #${BOX_ID} .gtiv-controls>:last-child { border-right:0; }
-                #${BOX_ID} .gtiv-card { padding:10px 11px; }
-                #${BOX_ID} .gtiv-card-title { color:#78899c; font-size:11px; font-weight:650; letter-spacing:.45px; }
-                #${BOX_ID} select.input-nicer { height:34px !important; border-color:rgba(148,163,184,.18) !important; border-radius:7px !important; background:#0b1219 !important; color:#dce5ec !important; box-shadow:none !important; }
-                #${BOX_ID} select.input-nicer:focus { border-color:rgba(95,211,234,.58) !important; box-shadow:0 0 0 2px rgba(95,211,234,.08) !important; }
-                #${BOX_ID} .gtiv-check { color:#b6c3cf; }
-                #${BOX_ID} .gtiv-action { padding:10px; }
-                #${BOX_ID} .gtiv-run.btn { min-height:38px; border:1px solid rgba(95,211,234,.34) !important; border-radius:8px !important; background:#15313d !important; color:#dff8fc !important; box-shadow:none !important; text-shadow:none; font-weight:650 !important; }
-                #${BOX_ID} .gtiv-run.btn:hover:not(:disabled) { border-color:rgba(95,211,234,.65) !important; background:#1b3d4a !important; box-shadow:none !important; transform:translateY(-1px); }
-                #${BOX_ID} .gtiv-progress { border-color:rgba(148,163,184,.14); border-radius:9px; background:#101821; }
-                #${BOX_ID} .gtiv-progress-track { height:5px; border:0; background:#070c11; }
-                #${BOX_ID} #${PREFIX}ProgressBar { background:linear-gradient(90deg,#38b9d6,#5fd3ea); box-shadow:none; }
-                #${BOX_ID} .gtiv-stats { gap:0; overflow:hidden; border:1px solid rgba(148,163,184,.14); border-radius:10px; background:#101821; }
-                #${BOX_ID} .gtiv-stat { padding:10px 7px; border:0; border-right:1px solid rgba(148,163,184,.10); border-radius:0; background:transparent; }
-                #${BOX_ID} .gtiv-stat:last-child { border-right:0; }
-                #${BOX_ID} .gtiv-stat::before { display:none; }
-                #${BOX_ID} .gtiv-stat-icon { width:15px; height:15px; opacity:.55; font-size:14px; }
-                #${BOX_ID} .gtiv-stat-value { font-size:19px; font-weight:700; }
-                #${BOX_ID} .gtiv-stat-label { color:#718295; font-size:10.5px; }
-                #${BOX_ID} #${PREFIX}Summary:not(:empty) { border-color:rgba(148,163,184,.14); border-left:2px solid rgba(95,211,234,.55); background:#101821; color:#b9c7d2; }
-                #${BOX_ID} .gtiv-log-section { border-color:rgba(148,163,184,.14); border-radius:10px; background:#0a1118; }
-                #${BOX_ID} .gtiv-log-head { border-bottom-color:rgba(148,163,184,.11); background:#101821; }
-                #${BOX_ID} .gtiv-log-title { color:#c7d3dc; font-weight:650; }
-                #${BOX_ID} .gtiv-clear-log { border-color:rgba(148,163,184,.16); background:transparent; color:#7f90a1; }
-                #${BOX_ID} #${PREFIX}Log { color:#9aabba; background:#0a1118; }
-                #${BOX_ID} .gtiv-footer { margin:10px 0 0; padding:8px 2px 0; border-top:1px solid rgba(148,163,184,.10); background:transparent; color:#607183; }
-                #${BOX_ID} .gtiv-footer-center { color:#66788a; letter-spacing:1.35px; }
-                #${BOX_ID} .gtiv-footer-right { color:#77899a; }
-                #${BOX_ID} .gtiv-footer-right b { color:#a7bac8; }
-
             `);
         }
 
@@ -1221,17 +1123,17 @@ function createWebiTimeSharedUi() {
             position: relative;
             margin: 12px 0 18px 0 !important;
             overflow: hidden;
-            border: 1px solid rgba(55, 220, 255, .48);
-            border-radius: 12px;
+            border: 1px solid rgba(55, 220, 255, .68);
+            border-radius: 13px;
             background:
                 radial-gradient(circle at 10% -20%, rgba(0, 196, 255, .22), transparent 34%),
                 radial-gradient(circle at 86% 0%, rgba(255, 66, 200, .16), transparent 28%),
                 radial-gradient(circle at 95% 115%, rgba(255, 122, 44, .14), transparent 30%),
                 linear-gradient(180deg, #07111d 0%, #081725 52%, #06101a 100%);
             box-shadow:
-                0 0 0 1px rgba(0, 0, 0, .48) inset,
-                0 10px 26px rgba(0, 0, 0, .30),
-                0 0 18px rgba(0, 177, 238, .10);
+                0 0 0 1px rgba(0, 0, 0, .55) inset,
+                0 0 24px rgba(0, 177, 238, .16),
+                0 7px 18px rgba(15, 12, 25, .30);
             color: var(--wtra-text);
             font-family: "Segoe UI", Arial, sans-serif;
             text-align: left !important;
@@ -1263,10 +1165,10 @@ function createWebiTimeSharedUi() {
             align-items: center;
             justify-content: space-between;
             gap: 16px;
-            min-height: 86px;
-            padding: 14px 16px;
+            min-height: 88px;
+            padding: 15px 18px;
             overflow: hidden;
-            border-bottom: 1px solid rgba(55, 220, 255, .28);
+            border-bottom: 1px solid rgba(55, 220, 255, .42);
             background: linear-gradient(115deg, rgba(5,17,29,.96) 0%, rgba(7,32,51,.92) 54%, rgba(34,9,43,.88) 100%);
         }
 
@@ -1364,16 +1266,14 @@ function createWebiTimeSharedUi() {
         }
 
         .wtra-body {
-            padding: 12px;
-            background: linear-gradient(180deg, rgba(4,16,27,.18), rgba(2,11,19,.34));
+            padding: 14px;
         }
 
         .wtra-intro {
-            padding: 12px 13px;
-            border: 1px solid var(--webi-border);
-            border-bottom-color: var(--webi-separator);
-            border-radius: var(--webi-radius) var(--webi-radius) 0 0;
-            background: linear-gradient(180deg, rgba(12,34,52,.88), rgba(8,25,40,.90));
+            padding: 11px 13px;
+            border: 1px solid rgba(55,220,255,.20);
+            border-radius: 8px;
+            background: linear-gradient(180deg, rgba(13,34,52,.84), rgba(7,21,35,.90));
             color: #cfe7f3;
             font-size: var(--webi-font-body);
             line-height: 1.5;
@@ -1382,14 +1282,8 @@ function createWebiTimeSharedUi() {
         .wtra-actions {
             display: grid;
             grid-template-columns: repeat(2, minmax(180px, 1fr));
-            gap: 9px;
-            margin-top: 0;
-            padding: 10px;
-            border: 1px solid var(--webi-border);
-            border-top: 0;
-            border-radius: 0 0 var(--webi-radius) var(--webi-radius);
-            background: rgba(5,19,31,.86);
-            box-shadow: 0 6px 18px rgba(0,0,0,.14);
+            gap: 10px;
+            margin-top: 11px;
         }
 
         .wtra-btn.btn,
@@ -1430,10 +1324,9 @@ function createWebiTimeSharedUi() {
             grid-template-columns: 1fr auto 1fr;
             align-items: center;
             gap: 10px;
-            margin: 10px -12px -12px;
-            padding: 9px 12px 10px;
-            border-top: 1px solid rgba(55,220,255,.14);
-            background: rgba(3,14,24,.54);
+            margin-top: 10px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(55,220,255,.16);
             color: #65879a;
             font-size: var(--webi-font-footer);
         }
@@ -1525,13 +1418,8 @@ function createWebiTimeSharedUi() {
         .wtra-option-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 1px;
+            gap: 8px;
             margin-bottom: 12px;
-            overflow: hidden;
-            padding: 1px;
-            border: 1px solid var(--webi-border);
-            border-radius: var(--webi-radius);
-            background: var(--webi-separator);
         }
 
         .wtra-option {
@@ -1541,9 +1429,9 @@ function createWebiTimeSharedUi() {
             min-height: 48px;
             padding: 9px 10px;
             box-sizing: border-box;
-            border: 0;
-            border-radius: 0;
-            background: linear-gradient(180deg, rgba(12,34,52,.88), rgba(7,21,35,.94));
+            border: 1px solid rgba(55,220,255,.20);
+            border-radius: 8px;
+            background: linear-gradient(180deg, rgba(13,34,52,.84), rgba(7,21,35,.90));
             color: #cfe7f3;
             font-size: var(--webi-font-small);
             line-height: 1.3;
@@ -1602,16 +1490,14 @@ function createWebiTimeSharedUi() {
         #div_command.wtra-types-list { padding-bottom: 8px; }
 
         .wtra-attack-row {
-            margin: 0 8px;
-            padding: 8px;
-            border: 0;
-            border-bottom: 1px solid rgba(55,220,255,.10);
-            border-radius: 0;
-            background: transparent;
+            margin: 5px 8px;
+            padding: 7px 8px;
+            border: 1px solid rgba(55,220,255,.13);
+            border-radius: 7px;
+            background: rgba(10,28,43,.70);
         }
 
-        .wtra-attack-row:last-child { border-bottom: 0; }
-        .wtra-attack-row:hover { background: rgba(55,220,255,.035); }
+        .wtra-attack-row:hover { border-color: rgba(55,220,255,.31); }
 
         .wtra-input {
             width: 100% !important;
@@ -1696,47 +1582,6 @@ function createWebiTimeSharedUi() {
             .wtra-modal { width: calc(100vw - 16px); max-height: calc(100vh - 40px); }
             #popupcontainer.wtra-popup-body { max-height: calc(100vh - 210px); }
         }
-
-        /* Rename Attaques — Webi-Time 2026 minimal */
-        #openDiv.wtra-panel { margin:12px 0 18px !important; border:1px solid rgba(148,163,184,.20); border-radius:14px; background:#0d141c; box-shadow:0 12px 30px rgba(0,0,0,.20); color:var(--webi-text); font-family:"Segoe UI Variable","Segoe UI",system-ui,-apple-system,sans-serif; }
-        #openDiv.wtra-panel::before,.wtra-hero::after,.wtra-logo::after { display:none; }
-        .wtra-hero { min-height:68px; padding:13px 16px; border-bottom:1px solid rgba(148,163,184,.14); background:#101821; }
-        .wtra-brand { gap:11px; }
-        .wtra-logo { flex-basis:44px; width:44px; height:44px; border:1px solid rgba(148,163,184,.18); border-radius:11px; background:#0b1219; box-shadow:none; font-size:27px; }
-        .wtra-title { font-size:var(--webi-font-title); font-weight:700; letter-spacing:-.35px; text-shadow:none; }
-        .wtra-title-webi { color:#dce7ef; } .wtra-title-tool { color:var(--webi-cyan); }
-        .wtra-byline,.wtra-tagline { margin-top:3px; color:#8292a5; font-size:var(--webi-font-small); }
-        .wtra-byline b { color:#b7c8d5; }
-        .wtra-hero-motto { padding-left:14px; border-left:1px solid rgba(148,163,184,.14); color:#68798b; font-size:10px; line-height:1.55; letter-spacing:.85px; }
-        .wtra-body { padding:12px; }
-        .wtra-intro { padding:11px 12px; border:1px solid rgba(148,163,184,.14); border-radius:10px 10px 0 0; background:#101821; color:#b9c6d0; box-shadow:none; }
-        .wtra-actions { gap:1px; margin-top:0; padding:1px; border:1px solid rgba(148,163,184,.14); border-top:0; border-radius:0 0 10px 10px; background:rgba(148,163,184,.10); overflow:hidden; }
-        .wtra-btn.btn,.wtra-btn { min-height:39px !important; border:0 !important; border-radius:0 !important; background:#111b24 !important; color:#d7e1e9 !important; box-shadow:none !important; font-weight:650 !important; }
-        .wtra-btn.btn:hover,.wtra-btn:hover { background:#172630 !important; color:#eef7fb !important; box-shadow:none !important; }
-        .wtra-btn-secondary.btn { border:0 !important; background:#141923 !important; color:#c6d0d9 !important; }
-        .wtra-btn-secondary.btn:hover { background:#1c202b !important; box-shadow:none !important; }
-        .wtra-footer { margin:10px 0 0; padding:8px 2px 0; border-top:1px solid rgba(148,163,184,.10); background:transparent; color:#607183; }
-        .wtra-footer-center { color:#66788a; letter-spacing:1.35px; } .wtra-footer-right { color:#77899a; } .wtra-footer-right b { color:#a7bac8; }
-        .wtra-modal { border-color:rgba(148,163,184,.20); border-radius:14px; background:#0d141c; box-shadow:0 20px 55px rgba(0,0,0,.42); }
-        .wtra-modal::before { display:none; }
-        .wtra-modal .wtra-hero { min-height:62px; padding:11px 14px; }
-        #popupcontainer.wtra-popup-body { background:#0d141c !important; }
-        .wtra-section-title { color:#cdd9e2; font-size:var(--webi-font-body); font-weight:700; }
-        .wtra-option-grid { gap:1px; padding:1px; border-color:rgba(148,163,184,.14); border-radius:10px; background:rgba(148,163,184,.10); }
-        .wtra-option { min-height:46px; border:0; background:#101821; color:#b9c6d0; }
-        .wtra-option:hover { background:#14202a; }
-        .wtra-types-card { border-color:rgba(148,163,184,.14); border-radius:10px; background:#0a1118; }
-        .wtra-types-toolbar { border-bottom-color:rgba(148,163,184,.11); background:#101821; }
-        .wtra-types-toolbar-title { color:#c7d3dc; font-weight:700; }
-        .wtra-types-head { color:#68798b; }
-        .wtra-attack-row { border-bottom-color:rgba(148,163,184,.09); }
-        .wtra-attack-row:hover { background:rgba(148,163,184,.035); }
-        .wtra-input { border-color:rgba(148,163,184,.18) !important; border-radius:7px !important; background:#0b1219 !important; color:#dce5ec !important; box-shadow:none !important; }
-        .wtra-input:focus { border-color:rgba(95,211,234,.58) !important; box-shadow:0 0 0 2px rgba(95,211,234,.08) !important; }
-        .wtra-remove { border-color:rgba(240,116,134,.28); border-radius:7px; background:transparent; color:#c97986; }
-        .wtra-remove:hover { border-color:rgba(240,116,134,.52); background:rgba(240,116,134,.08); }
-        .wtra-modal-footer { border-top-color:rgba(148,163,184,.10); background:#0a1118; }
-
     `);
         }
 
