@@ -2028,16 +2028,25 @@ function createWebiTimeSharedUi() {
                 font-variant-numeric: tabular-nums;
             }
 
-            #twcheese_pillaging_stats .wtri-table th {
+            /*
+             * Le CSS natif de Guerre Tribale applique notamment :
+             * th, .vis > h4 { font-size: 9pt; text-align: left; font-weight: 700; }
+             * On fixe explicitement les propriétés des TH Webi-Time.
+             */
+            #twcheese_pillaging_stats.wtri-panel .wtri-table th {
                 position: sticky;
                 top: 0;
                 z-index: 1;
                 padding: 8px 9px;
                 border-bottom: 1px solid rgba(55,220,255,.18);
-                background: #0b1d2c;
-                color: #b9d7e6;
-                text-align: center;
-                font-weight: 700;
+                background: #0b1d2c !important;
+                color: #b9d7e6 !important;
+                font-family: "Segoe UI", Arial, sans-serif !important;
+                font-size: var(--webi-font-small) !important;
+                font-weight: 700 !important;
+                line-height: 1.3 !important;
+                text-align: center !important;
+                vertical-align: middle !important;
             }
 
             #twcheese_pillaging_stats .wtri-table td {
