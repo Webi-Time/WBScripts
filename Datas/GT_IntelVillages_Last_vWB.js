@@ -1,7 +1,7 @@
 (async function () {
     'use strict';
 
-    const SCRIPT_VERSION = '4.18';
+    const SCRIPT_VERSION = '4.19';
 
     // Signature runtime volontairement répartie en plusieurs fragments.
     // Le nom reste lisible dans l'en-tête documentaire ci-dessous, mais
@@ -65,15 +65,25 @@
     const BOX_ID = PREFIX + 'Box';
     const REDIRECT_PREF_KEY = 'webitime.gtIntelVillages.skipRedirect';
     const WEBITIME_SOURCE_URL = 'https://github.com/Webi-Time/WBScripts/tree/GT/Datas';
+    const WEBITIME_COMMON_URL = 'https://webi-time.github.io/WBScripts/Datas/WebiTime_GT_Common.js';
 
-    
+    // Charge automatiquement le composant commun si le raccourci ne l'a pas déjà fait.
+    // Cela évite toute condition de course entre deux $.getScript() lancés en parallèle.
+    if (!window.WebiTimeGT) {
+        try {
+            await $.getScript(WEBITIME_COMMON_URL);
+        } catch (error) {
+            console.error('[Webi-Time Intel Villages] Impossible de charger WebiTime_GT_Common.js.', error);
+            if (typeof UI !== 'undefined' && UI.ErrorMessage) {
+                UI.ErrorMessage('Impossible de charger le composant Webi-Time commun.');
+            }
+            return;
+        }
+    }
 
     const WEBITIME_UI = window.WebiTimeGT;
     if (!WEBITIME_UI) {
-        console.error('[Webi-Time Intel Villages] WebiTime_GT_Common.js doit être chargé avant ce script.');
-        if (typeof UI !== 'undefined' && UI.ErrorMessage) {
-            UI.ErrorMessage('Le composant Webi-Time commun n’est pas chargé.');
-        }
+        console.error('[Webi-Time Intel Villages] WebiTime_GT_Common.js est introuvable après chargement.');
         return;
     }
     WEBITIME_UI.injectStyles();
@@ -324,10 +334,12 @@
     // ========================================================================
 
     function renderUi() {
-        WEBITIME_UI.injectStyles();
-        WEBITIME_UI.injectIntelStyles(PREFIX, BOX_ID);
+        // Nettoie d'abord une éventuelle ancienne interface/style, puis réinjecte le CSS.
+        // v4.18 supprimait le style juste après l'avoir injecté.
         $('#' + BOX_ID).remove();
         $('#' + PREFIX + 'Style').remove();
+        WEBITIME_UI.injectStyles();
+        WEBITIME_UI.injectIntelStyles(PREFIX, BOX_ID);
 
         const author = SCRIPT_AUTHOR();
 
