@@ -379,7 +379,7 @@
                     box-shadow:
                         0 0 17px rgba(55,220,255,.22),
                         0 0 28px rgba(255,66,200,.10) inset;
-                    font-size: 36px;
+                    font-size: 38px;
                     line-height: 1;
                 }
 
@@ -397,7 +397,7 @@
 
                 #${BOX_ID} .gtiv-title {
                     margin: 0;
-                    font-size: 22px;
+                    font-size: 24px;
                     font-weight: 800;
                     line-height: 1.05;
                     letter-spacing: .1px;
@@ -415,7 +415,7 @@
                 #${BOX_ID} .gtiv-byline {
                     margin-top: 5px;
                     color: #d8eef8;
-                    font-size: 11px;
+                    font-size: 13px;
                 }
 
                 #${BOX_ID} .gtiv-byline b {
@@ -425,7 +425,7 @@
                 #${BOX_ID} .gtiv-tagline {
                     margin-top: 5px;
                     color: var(--wt-muted);
-                    font-size: 11px;
+                    font-size: 13px;
                     letter-spacing: .15px;
                 }
 
@@ -437,7 +437,7 @@
                     border-left: 1px solid rgba(55,220,255,.35);
                     text-align: right;
                     color: #82dfff;
-                    font-size: 9px;
+                    font-size: 11px;
                     line-height: 1.7;
                     letter-spacing: 1.15px;
                     text-transform: uppercase;
@@ -472,7 +472,7 @@
                     display: block;
                     margin: 0 0 6px 0;
                     color: #b9d7e6;
-                    font-size: 10px;
+                    font-size: 12px;
                     font-weight: 700;
                     letter-spacing: .5px;
                     text-transform: uppercase;
@@ -490,7 +490,7 @@
                     color: #e9f9ff !important;
                     box-shadow: 0 0 0 1px rgba(0,0,0,.22) inset !important;
                     padding: 3px 8px !important;
-                    font-size: 11px !important;
+                    font-size: 13px !important;
                 }
 
                 #${BOX_ID} select.input-nicer:focus {
@@ -517,7 +517,7 @@
                     min-height: 20px;
                     margin: 0;
                     color: #cfe7f3;
-                    font-size: 11px;
+                    font-size: 13px;
                     font-weight: 400;
                     cursor: pointer;
                 }
@@ -551,7 +551,7 @@
                         0 0 20px rgba(55,220,255,.10) inset !important;
                     color: #80eaff !important;
                     text-shadow: 0 0 7px rgba(55,220,255,.55);
-                    font-size: 12px !important;
+                    font-size: 14px !important;
                     font-weight: 800 !important;
                     letter-spacing: .15px;
                     cursor: pointer;
@@ -582,7 +582,7 @@
                     gap: 8px;
                     margin-bottom: 6px;
                     color: #b9dbe8;
-                    font-size: 10px;
+                    font-size: 12px;
                 }
 
                 #${BOX_ID} .gtiv-progress-track {
@@ -639,14 +639,14 @@
                     height: 18px;
                     margin-bottom: 2px;
                     color: inherit;
-                    font-size: 15px;
+                    font-size: 17px;
                     font-weight: 900;
                 }
 
                 #${BOX_ID} .gtiv-stat-value {
                     display: block;
                     color: inherit;
-                    font-size: 18px;
+                    font-size: 20px;
                     font-weight: 800;
                     line-height: 1.05;
                     text-shadow: none;
@@ -657,7 +657,7 @@
                     margin-top: 4px;
                     overflow: hidden;
                     color: #91afbf;
-                    font-size: 9px;
+                    font-size: 11px;
                     line-height: 1.15;
                     text-overflow: ellipsis;
                     white-space: nowrap;
@@ -678,7 +678,7 @@
                     border-radius: 6px;
                     background: rgba(8,28,44,.72);
                     color: #cce9f5;
-                    font-size: 10px;
+                    font-size: 13px;
                 }
 
                 #${BOX_ID} .gtiv-log-section {
@@ -701,7 +701,7 @@
 
                 #${BOX_ID} .gtiv-log-title {
                     color: #d9f4ff;
-                    font-size: 11px;
+                    font-size: 13px;
                     font-weight: 700;
                 }
 
@@ -711,7 +711,7 @@
                     border-radius: 5px;
                     background: rgba(255,255,255,.025);
                     color: #8eb5c9;
-                    font-size: 9px;
+                    font-size: 11px;
                     cursor: pointer;
                 }
 
@@ -727,7 +727,7 @@
                     padding: 8px 10px;
                     color: #a9cada;
                     font-family: Consolas, "Courier New", monospace;
-                    font-size: 10px;
+                    font-size: 12px;
                     line-height: 1.55;
                     scrollbar-color: #1e6c8a #07111d;
                     scrollbar-width: thin;
@@ -788,7 +788,7 @@
                     padding-top: 8px;
                     border-top: 1px solid rgba(55,220,255,.16);
                     color: #65879a;
-                    font-size: 9px;
+                    font-size: 11px;
                 }
 
                 #${BOX_ID} .gtiv-footer-center {
@@ -818,7 +818,7 @@
 
                 @media (max-width: 680px) {
                     #${BOX_ID} .gtiv-hero-motto { display: none; }
-                    #${BOX_ID} .gtiv-title { font-size: 18px; }
+                    #${BOX_ID} .gtiv-title { font-size: 20px; }
                     #${BOX_ID} .gtiv-controls { grid-template-columns: 1fr; }
                     #${BOX_ID} .gtiv-stats { grid-template-columns: repeat(2, 1fr); }
                     #${BOX_ID} .gtiv-footer { grid-template-columns: 1fr; text-align: center; }
@@ -834,7 +834,7 @@
                             <div class="gtiv-title">
                                 <span class="gtiv-title-webi">Webi-Time</span><span class="gtiv-title-intel"> Intel Villages</span>
                             </div>
-                            <div class="gtiv-byline">par <b>${author}</b> &nbsp;•&nbsp; renseignement DEFF / OFF / bâtiments</div>
+                            <div class="gtiv-byline">Par <b>${author}</b> &nbsp;•&nbsp; Renseignement DEFF / OFF / bâtiments</div>
                             <div class="gtiv-tagline">Des rapports aux infos. Des infos aux victoires.</div>
                         </div>
                     </div>
