@@ -41,10 +41,10 @@ function createWebiTimeSharedUi() {
             }),
             fonts: Object.freeze({
                 title: '25px',
-                body: '15px',
+                body: '16px',
                 small: '15px',
-                compact: '13px',
-                footer: '12px',
+                compact: '14px',
+                footer: '13px',
                 modalTitle: '20px'
             })
         });
