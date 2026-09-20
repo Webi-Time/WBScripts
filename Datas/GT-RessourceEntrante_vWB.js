@@ -33,7 +33,7 @@
 (async function() {
     const WEBITIME_RESOURCE_NAME = 'Webi-Time Ressources Entrantes';
     const WEBITIME_RESOURCE_AUTHOR = 'NoLife4Ever';
-    const WEBITIME_RESOURCE_VERSION = '1.2';
+    const WEBITIME_RESOURCE_VERSION = '1.3';
     const WEBITIME_RESOURCE_STYLE_ID = 'webiTimeIncomingResourcesStyle';
     const WEBITIME_SOURCE_URL = 'https://github.com/Webi-Time/WBScripts/tree/GT/Datas';
     const WEBITIME_COMMON_URL = 'https://webi-time.github.io/WBScripts/Datas/WebiTime_GT_Common.js';
@@ -2564,19 +2564,19 @@
 
                 let pageInfo = this.pageNumber ? ` • page ${this.pageNumber}` : '';
 return `
-                    <div id="twcheese_pillaging_stats" class="vis widget wtri-panel">
-                        <div class="wtri-hero">
-                            <div class="wtri-brand">
-                                <div class="wtri-logo" aria-hidden="true">🐼</div>
+                    <div id="twcheese_pillaging_stats" class="vis widget wt-panel">
+                        <div class="wt-hero">
+                            <div class="wt-brand">
+                                <div class="wt-logo" aria-hidden="true">🐼</div>
                                 <div>
-                                    <div class="wtri-title">
-                                        <span class="wtri-title-webi">Webi-Time</span><span class="wtri-title-tool"> Ressources Entrantes</span>
+                                    <div class="wt-title">
+                                        <span class="wt-title-brand">Webi-Time</span><span class="wt-title-tool"> Ressources Entrantes</span>
                                     </div>
-                                    <div class="wtri-byline">Adaptation par <b>${WEBITIME_RESOURCE_AUTHOR}</b> &nbsp;•&nbsp; moteur original : cheesasaurus</div>
-                                    <div class="wtri-tagline">Visualiser les retours. Anticiper les ressources. Garder le rythme.</div>
+                                    <div class="wt-byline">Adaptation par <b>${WEBITIME_RESOURCE_AUTHOR}</b> &nbsp;•&nbsp; moteur original : cheesasaurus</div>
+                                    <div class="wt-tagline">Visualiser les retours. Anticiper les ressources. Garder le rythme.</div>
                                 </div>
                             </div>
-                            <div class="wtri-hero-motto">
+                            <div class="wt-hero-motto">
                                 ANALYSER<br>
                                 ANTICIPER<br>
                                 OPTIMISER<br>
@@ -2584,21 +2584,21 @@ return `
                             </div>
                         </div>
 
-                        <div class="wtri-body">
+                        <div class="wt-body">
                             <div id="twcheese_pillaging_stats_content">
                                 <div class="wtri-summary">
-                                    <div class="wtri-card">
-                                        <span class="wtri-card-title">Période analysée</span>
+                                    <div class="wt-card">
+                                        <span class="wt-card-title">Période analysée</span>
                                         <div class="wtri-range">
                                             <span class="wtri-range-label">De</span>
-                                            <select id="twcheese_pillaging_stats_from">${summationFromOptions.join('')}</select>
+                                            <select id="twcheese_pillaging_stats_from" class="wt-input">${summationFromOptions.join('')}</select>
                                             <span class="wtri-range-label">à</span>
-                                            <select id="twcheese_pillaging_stats_to">${summationToOptions.join('')}</select>
+                                            <select id="twcheese_pillaging_stats_to" class="wt-input">${summationToOptions.join('')}</select>
                                         </div>
                                     </div>
 
-                                    <div class="wtri-card">
-                                        <span class="wtri-card-title">Ressources sur la période</span>
+                                    <div class="wt-card">
+                                        <span class="wt-card-title">Ressources sur la période</span>
                                         <div id="twcheese_pillaging_results" class="wtri-results">Résultats affichés ici...</div>
                                     </div>
                                 </div>
@@ -2625,13 +2625,13 @@ return `
                                 </div>
                             </div>
 
-                            <div class="wtri-footer">
-                                <span class="wtri-footer-left">
+                            <div class="wt-footer">
+                                <span class="wt-footer-left">
                                     ${WEBITIME_UI.buildSettingsMarkup('wtri_clear_saved_data', 'wtri_report_bug')}
                                     <span>Version ${WEBITIME_RESOURCE_VERSION}</span>
                                 </span>
-                                <span class="wtri-footer-center">Intelligence &nbsp;■&nbsp; Organisation &nbsp;■&nbsp; Supériorité</span>
-                                <span class="wtri-footer-right">🐼 <b>Webi-Time</b> &nbsp;|&nbsp; adaptation par ${WEBITIME_RESOURCE_AUTHOR}</span>
+                                <span class="wt-footer-center">Intelligence &nbsp;■&nbsp; Organisation &nbsp;■&nbsp; Supériorité</span>
+                                <span class="wt-footer-right">🐼 <b>Webi-Time</b> &nbsp;|&nbsp; adaptation par ${WEBITIME_RESOURCE_AUTHOR}</span>
                             </div>
                         </div>
                     </div>

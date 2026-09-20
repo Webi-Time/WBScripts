@@ -2,7 +2,7 @@
     'use strict';
 
     /*
-     * Webi-Time Map Planner v3.1.6
+     * Webi-Time Map Planner v3.2.0
      * - Synchronisation Villages affichés <-> Types de bonus
      * - "Tous" réinitialise automatiquement "Tous les bonus"
      * - Moteur de masquage attaques/retours restauré depuis la v3.1.1 (version validée)
@@ -12,7 +12,7 @@
 
     const WEBITIME_RESOURCE_NAME = 'Webi-Time Map Planner';
     const WEBITIME_RESOURCE_AUTHOR = 'NoLife4Ever';
-    const WEBITIME_RESOURCE_VERSION = '3.1.6';
+    const WEBITIME_RESOURCE_VERSION = '3.2.0';
     const WEBITIME_RESOURCE_STYLE_ID = 'webiTimeMapPlannerStyle';
     const WEBITIME_SOURCE_URL = 'https://github.com/Webi-Time/WBScripts/tree/GT/Datas';
     const WEBITIME_COMMON_URL = 'https://webi-time.github.io/WBScripts/Datas/WebiTime_GT_Common.js';
@@ -38,11 +38,11 @@
         '';
 
     function getExistingWebiTimeCommon() {
-        if (win.WebiTimeGT && typeof win.WebiTimeGT.injectStyles === 'function') {
+        if (win.WebiTimeGT && typeof win.WebiTimeGT.injectMapPlannerStyles === 'function') {
             return win.WebiTimeGT;
         }
 
-        if (window.WebiTimeGT && typeof window.WebiTimeGT.injectStyles === 'function') {
+        if (window.WebiTimeGT && typeof window.WebiTimeGT.injectMapPlannerStyles === 'function') {
             /*
              * Si le composant a déjà été chargé dans la fenêtre parente,
              * on peut le réutiliser directement.
@@ -388,206 +388,8 @@
     }
 
     function injectStyle() {
-        $('#gtmp-style', doc).remove();
-        var style = doc.createElement('style');
-        style.id = 'gtmp-style';
-        style.textContent = `
-            #gt-map-planner-ui{
-                --wt-orange:#ff9800;
-                --wt-orange-soft:#ffb347;
-                --wt-bg:#171717;
-                --wt-bg-2:#202020;
-                --wt-card:#252525;
-                --wt-card-2:#2c2c2c;
-                --wt-border:#444;
-                --wt-text:#e6e6e6;
-                --wt-muted:#a8a8a8;
-                position:fixed;top:96px;right:18px;z-index:99999;width:420px;height:760px;
-                max-height:calc(100vh - 118px);overflow:hidden;background:var(--wt-bg);color:var(--wt-text);
-                display:flex;flex-direction:column;
-                border:1px solid #3d3d3d;border-radius:10px;box-shadow:0 10px 34px rgba(0,0,0,.58);
-                font-family:Arial,Helvetica,sans-serif;font-size:12px;
-            }
-            #gtmp-title{position:relative;cursor:move;user-select:none;flex:0 0 auto}
-            .gtmp-hero{
-                display:flex;justify-content:space-between;gap:14px;align-items:stretch;padding:14px 16px;
-                background:linear-gradient(135deg,#151515 0%,#242424 72%,#31200b 100%);
-                border-bottom:2px solid var(--wt-orange);
-            }
-            .gtmp-brand{display:flex;align-items:center;gap:11px;min-width:0}
-            .gtmp-logo{
-                width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;
-                flex:0 0 auto;font-size:25px;background:#0f0f0f;border:1px solid #555;
-                box-shadow:inset 0 0 0 1px rgba(255,152,0,.18),0 3px 12px rgba(0,0,0,.4);
-            }
-            .gtmp-main-title{font-weight:800;font-size:17px;line-height:1.05;white-space:nowrap}
-            .gtmp-title-webi{color:var(--wt-orange)}
-            .gtmp-title-tool{color:#f1f1f1}
-            .gtmp-byline{font-size:10px;color:#a9a9a9;margin-top:4px}
-            .gtmp-tagline{font-size:10px;color:#d2d2d2;margin-top:5px;letter-spacing:.15px}
-            .gtmp-hero-motto{
-                align-self:center;text-align:right;color:#777;font-size:8px;font-weight:800;line-height:1.38;
-                letter-spacing:1.2px;white-space:nowrap;padding-right:20px;
-            }
-            #gtmp-close{
-                position:absolute;right:8px;top:7px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;
-                cursor:pointer;color:#aaa;font-size:18px;line-height:22px;border-radius:6px;
-            }
-            #gtmp-close:hover{background:#3a2525;color:#ffb3b3}
-            #gtmp-body{padding:10px;overflow:auto;min-height:0;flex:1 1 auto;max-height:none;background:#181818}
-            #gt-map-planner-ui button,#gt-map-planner-ui select,#gt-map-planner-ui input{font-family:Arial,Helvetica,sans-serif;font-size:11px;box-sizing:border-box}
-            .gtmp-card{
-                background:linear-gradient(180deg,var(--wt-card) 0%,#202020 100%);border:1px solid var(--wt-border);
-                border-radius:8px;padding:10px;margin-bottom:9px;box-shadow:0 2px 8px rgba(0,0,0,.2);
-            }
-            .gtmp-card:last-child{margin-bottom:0}
-            .gtmp-caption{display:flex;align-items:center;gap:7px;color:#f0f0f0;margin-bottom:8px;font-weight:800;font-size:12px;text-transform:uppercase;letter-spacing:.45px}
-            .gtmp-caption:before{content:'';width:4px;height:14px;border-radius:4px;background:var(--wt-orange);box-shadow:0 0 8px rgba(255,152,0,.3)}
-            .gtmp-section-toggle{cursor:pointer;user-select:none;padding:3px 2px;border-radius:5px;transition:background .12s,color .12s}
-            .gtmp-section-toggle:hover{background:#2b2b2b;color:#fff}
-            .gtmp-section-toggle:focus{outline:none;box-shadow:0 0 0 2px rgba(255,152,0,.14)}
-            .gtmp-section-chevron{margin-left:auto;display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:#111;border:1px solid #4b4b4b;color:#ffb347;font-size:11px;line-height:1;transition:transform .18s ease,background .12s,border-color .12s}
-            .gtmp-section-toggle:hover .gtmp-section-chevron{background:#191919;border-color:#777}
-            .gtmp-section-content{display:block}
-            .gtmp-section-card.collapsed .gtmp-section-content{display:none}
-            .gtmp-section-card.collapsed .gtmp-section-toggle{margin-bottom:0}
-            .gtmp-section-card.collapsed .gtmp-section-chevron{transform:rotate(-90deg)}
-            .gtmp-filter-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-            .gtmp-filter{
-                color:#ddd;background:#303030;border:1px solid #555;border-radius:15px;padding:6px 8px;cursor:pointer;
-                transition:background .12s,border-color .12s,box-shadow .12s,color .12s;
-            }
-            .gtmp-filter[data-filter="all"]{grid-column:1 / -1}
-            .gtmp-filter[data-filter="myVillage"]{grid-column:1 / -1}
-            .gtmp-filter:hover{background:#393939;border-color:#777}
-            .gtmp-filter.active{background:#151515;border-color:var(--wt-orange);color:#fff;font-weight:800;box-shadow:0 0 0 1px rgba(255,152,0,.18),inset 0 0 14px rgba(255,152,0,.07)}
-            .gtmp-bonus-filter-wrap{margin-top:9px;padding-top:8px;border-top:1px solid #3b3b3b}
-            .gtmp-bonus-filter-title{
-                display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;padding:5px 7px;
-                color:#d8d8d8;background:#1d1d1d;border:1px solid #383838;border-radius:6px;cursor:pointer;user-select:none;
-                font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.35px;transition:background .12s,border-color .12s,color .12s;
-            }
-            .gtmp-bonus-filter-title:hover{background:#252525;border-color:#555;color:#fff}
-            .gtmp-bonus-filter-title:focus{outline:none;border-color:var(--wt-orange);box-shadow:0 0 0 2px rgba(255,152,0,.12)}
-            .gtmp-bonus-filter-title-main{display:flex;align-items:center;gap:6px}
-            .gtmp-bonus-filter-title-main:before{content:'◆';color:var(--wt-orange);font-size:8px;text-shadow:0 0 6px rgba(255,152,0,.35)}
-            .gtmp-bonus-filter-meta{display:flex;align-items:center;gap:7px}
-            .gtmp-bonus-filter-meta .gtmp-bonus-multi{color:#8e8e8e;font-size:9px;font-weight:600;text-transform:none;letter-spacing:0}
-            .gtmp-bonus-chevron{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;background:#111;border:1px solid #494949;color:#ffb347;font-size:11px;line-height:1;transition:transform .18s ease,background .12s,border-color .12s}
-            .gtmp-bonus-filter-title:hover .gtmp-bonus-chevron{background:#191919;border-color:#777}
-            .gtmp-bonus-filter-content{max-height:260px;opacity:1;overflow:hidden;transition:max-height .22s ease,opacity .16s ease,margin .22s ease}
-            .gtmp-bonus-filter-wrap.collapsed .gtmp-bonus-filter-title{margin-bottom:0}
-            .gtmp-bonus-filter-wrap.collapsed .gtmp-bonus-filter-content{max-height:0;opacity:0;margin:0;pointer-events:none}
-            .gtmp-bonus-filter-wrap.collapsed .gtmp-bonus-chevron{transform:rotate(-90deg)}
-            .gtmp-bonus-filter-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
-            .gtmp-bonus-filter{
-                min-height:31px;display:flex;align-items:center;gap:6px;padding:4px 7px;overflow:hidden;
-                color:#d9d9d9;background:#242424;border:1px solid #484848;border-radius:6px;cursor:pointer;
-                text-align:left;font-size:10px;font-weight:700;transition:background .12s,border-color .12s,box-shadow .12s,color .12s;
-            }
-            .gtmp-bonus-filter[data-bonus-filter="all"]{grid-column:1 / -1;justify-content:center}
-            .gtmp-bonus-filter:hover{background:#303030;border-color:#707070}
-            .gtmp-bonus-filter.active{background:#151515;border-color:var(--wt-orange);color:#fff;box-shadow:0 0 0 1px rgba(255,152,0,.16),inset 0 0 12px rgba(255,152,0,.06)}
-            .gtmp-bonus-filter img{width:18px;height:18px;flex:0 0 18px;padding:2px;box-sizing:border-box;border-radius:50%;background:#0e0e0e;border:1px solid #777;filter:brightness(1.22) saturate(1.3) drop-shadow(0 1px 1px #000)}
-            .gtmp-bonus-filter.active img{border-color:#ffb347;box-shadow:0 0 6px rgba(255,179,71,.30)}
-            .gtmp-toggle-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:6px 0;padding:5px 7px;background:#1d1d1d;border:1px solid #383838;border-radius:6px}
-            .gtmp-switch{display:flex;align-items:center;gap:7px;cursor:pointer;font-weight:600}
-            .gtmp-switch input{margin:0;accent-color:var(--wt-orange)}
-            .gtmp-small{font-size:10px;color:var(--wt-muted);line-height:1.4}
-            .gtmp-field-label{display:block;margin:7px 0 4px;color:#cfcfcf;font-size:10px;font-weight:700}
-            .gtmp-label-row{display:grid;grid-template-columns:1fr;gap:5px;margin-top:7px}
-            .gtmp-input{width:100%;height:29px;background:#111;color:#eee;border:1px solid #555;border-radius:5px;padding:4px 7px;outline:none}
-            .gtmp-input:focus{border-color:var(--wt-orange);box-shadow:0 0 0 2px rgba(255,152,0,.12)}
-            .gtmp-btn{height:29px;background:#333;color:#eee;border:1px solid #5c5c5c;border-radius:5px;padding:4px 8px;cursor:pointer;font-weight:700}
-            .gtmp-btn:hover{background:#414141;border-color:#777}
-            .gtmp-btn-primary{background:#b96b00;border-color:#e58a0b;color:#fff}
-            .gtmp-btn-primary:hover{background:#d67b00;border-color:#ffab32}
-            .gtmp-btn-danger{background:#4b2929;border-color:#744141;color:#ffd8d8}
-            .gtmp-btn-danger:hover{background:#603131;border-color:#985050}
-            .gtmp-btn-picker{white-space:nowrap}
-            .gtmp-btn-picker.active{background:#151515;border-color:var(--wt-orange);color:#ffbd61;box-shadow:0 0 0 2px rgba(255,152,0,.14)}
-            .gtmp-form-grid{display:grid;grid-template-columns:1.1fr .72fr;gap:6px}
-            .gtmp-form-coord{display:grid;grid-template-columns:minmax(115px,1fr) auto auto;gap:6px;margin-top:6px}
-            .gtmp-zone-list{margin-top:8px;max-height:164px;overflow:auto;border:1px solid #3d3d3d;border-radius:6px;background:#191919}
-            .gtmp-zone-item{display:grid;grid-template-columns:1fr auto;gap:6px;padding:7px 8px;border-bottom:1px solid #343434;align-items:center}
-            .gtmp-zone-item:last-child{border-bottom:0}
-            .gtmp-zone-delete{width:24px;height:24px;padding:0;background:#4d2e2e;color:#ffdede;border:1px solid #724343;border-radius:5px;cursor:pointer}
-            .gtmp-status{margin-top:7px;padding:7px 8px;border-radius:6px;background:#191919;border:1px solid #383838;color:#aaa;font-size:10px;line-height:1.45}
-            .gtmp-picker-status{display:none;margin-top:6px;padding:7px 8px;border-radius:6px;background:#2a210f;border:1px solid #8b611d;color:#ffd18a;font-size:10px;font-weight:700}
-            .gtmp-picker-status.active{display:block}
-            .gtmp-footer{
-                display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;background:#111;flex:0 0 auto;
-                border-top:1px solid #3b3b3b;color:#888;font-size:9px;line-height:1.3;
-            }
-            .gtmp-footer b{color:#cfcfcf}
-            .gtmp-footer-center{color:#70522d;text-align:center;letter-spacing:.25px}
-            .gtmp-footer-right{white-space:nowrap}
-            .gtmp-picking-coord #map_wrap,.gtmp-picking-coord #map,.gtmp-picking-coord [id^="map_"]{cursor:crosshair!important}
-            /* Marqueurs d'ordres GT. Les retours peuvent être rendus sous forme
-               return_*, back.png, farm.png ou support.png selon le type de commande. */
-            body.gtmp-hide-map-attacks #map img[src*="attack_small"],
-            body.gtmp-hide-map-attacks #map_wrap img[src*="attack_small"],
-            body.gtmp-hide-map-attacks #map_container img[src*="attack_small"],
-            body.gtmp-hide-map-attacks #map img[src*="commands_outgoing"],
-            body.gtmp-hide-map-attacks #map_wrap img[src*="commands_outgoing"],
-            body.gtmp-hide-map-attacks #map_container img[src*="commands_outgoing"],
-            body.gtmp-hide-map-attacks #map img[src*="/return_"],
-            body.gtmp-hide-map-attacks #map_wrap img[src*="/return_"],
-            body.gtmp-hide-map-attacks #map_container img[src*="/return_"],
-            body.gtmp-hide-map-attacks #map img[src$="/back.png"],
-            body.gtmp-hide-map-attacks #map_wrap img[src$="/back.png"],
-            body.gtmp-hide-map-attacks #map_container img[src$="/back.png"],
-            body.gtmp-hide-map-attacks #map img[src$="/other_back.png"],
-            body.gtmp-hide-map-attacks #map_wrap img[src$="/other_back.png"],
-            body.gtmp-hide-map-attacks #map_container img[src$="/other_back.png"],
-            body.gtmp-hide-map-attacks #map img[src$="/farm.png"]:not(.gtmp-bonus-icon),
-            body.gtmp-hide-map-attacks #map_wrap img[src$="/farm.png"]:not(.gtmp-bonus-icon),
-            body.gtmp-hide-map-attacks #map_container img[src$="/farm.png"]:not(.gtmp-bonus-icon),
-            body.gtmp-hide-map-attacks #map img[src$="/support.png"],
-            body.gtmp-hide-map-attacks #map_wrap img[src$="/support.png"],
-            body.gtmp-hide-map-attacks #map_container img[src$="/support.png"],
-            body.gtmp-hide-map-attacks #map img[src*="/graphic/unit/"],
-            body.gtmp-hide-map-attacks #map_wrap img[src*="/graphic/unit/"],
-            body.gtmp-hide-map-attacks #map_container img[src*="/graphic/unit/"],
-            body.gtmp-hide-map-attacks #map img[src*="/unit/unit_"],
-            body.gtmp-hide-map-attacks #map_wrap img[src*="/unit/unit_"],
-            body.gtmp-hide-map-attacks #map_container img[src*="/unit/unit_"],
-            body.gtmp-hide-map-attacks #map [style*="/graphic/unit/"],
-            body.gtmp-hide-map-attacks #map_wrap [style*="/graphic/unit/"],
-            body.gtmp-hide-map-attacks #map_container [style*="/graphic/unit/"]{display:none!important}
-            .gtmp-zone-overlay{pointer-events:none;position:absolute;border-radius:50%;box-sizing:border-box}
-            .gtmp-zone-center{pointer-events:none;position:absolute;width:8px;height:8px;margin-left:-4px;margin-top:-4px;border:2px solid #111;border-radius:50%;box-sizing:border-box;z-index:6}
-            .gtmp-zone-tag{pointer-events:none;position:absolute;z-index:7;padding:1px 4px;border-radius:3px;color:#fff;font:bold 9px Arial,sans-serif;text-shadow:0 1px 2px #000;white-space:nowrap}
-            .gtmp-village-label{pointer-events:none;position:absolute;z-index:9;color:#fff;text-align:center;font:bold 10px Arial,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border:1px solid rgba(0,0,0,.85);border-radius:3px;text-shadow:0 1px 2px #000;box-shadow:0 1px 2px rgba(0,0,0,.45);opacity:.94;padding:0 3px;box-sizing:border-box}
-            .gtmp-bonus-badge{
-                pointer-events:none;position:absolute;z-index:20;display:flex;align-items:center;justify-content:center;
-                box-sizing:border-box;border:2px solid #ffb347;border-radius:50%;background:rgba(12,12,12,.88);
-                box-shadow:0 0 0 1px rgba(0,0,0,.9),0 0 8px rgba(255,179,71,.45),0 3px 7px rgba(0,0,0,.72);
-            }
-            .gtmp-bonus-icon{
-                display:block!important;max-width:none!important;max-height:none!important;object-fit:contain;
-                filter:brightness(1.28) contrast(1.12) saturate(1.45) drop-shadow(0 1px 1px rgba(0,0,0,.95));
-            }
-            /* Bonus Population +10 % :
-               farm.png est conservé comme icône native GT, mais sans fond artificiel.
-               L'exclusion des marqueurs de retour est gérée dans le JavaScript/CSS
-               de masquage des commandes, pas dans l'apparence de l'icône. */
-            .gtmp-bonus-badge[data-bonus-id="4"] .gtmp-bonus-icon{
-                display:block!important;
-                background:transparent!important;
-                transform:scale(1.16);
-                transform-origin:center center;
-                filter:brightness(1.22) contrast(1.14) saturate(1.30)
-                       drop-shadow(0 1px 1px rgba(0,0,0,.95));
-            }
-            .gtmp-bonus-filter[data-bonus-filter="4"] img{
-                background:#0e0e0e!important;
-                transform:none;
-                filter:brightness(1.22) contrast(1.14) saturate(1.30)
-                       drop-shadow(0 1px 1px rgba(0,0,0,.95));
-            }
-        `;
-        (doc.head || doc.documentElement).appendChild(style);
+        WEBITIME_UI.injectStyles();
+        WEBITIME_UI.injectMapPlannerStyles(WEBITIME_RESOURCE_STYLE_ID);
     }
 
     function parseCoord(value) {
@@ -1571,7 +1373,7 @@
         var box = doc.getElementById('gtmp-planned-list');
         if (!box) return;
         if (!GT.plannedZones.length) {
-            box.innerHTML = '<div class="gtmp-small" style="padding:7px;">Aucune zone fictive.</div>';
+            box.innerHTML = '<div class="wt-small" style="padding:7px;">Aucune zone fictive.</div>';
             return;
         }
 
@@ -1579,7 +1381,7 @@
             var label = z.type === 'church' ? 'Église' : 'Tour de guet';
             var radius = getRadiusForZone(z);
             return '<div class="gtmp-zone-item">' +
-                '<div><b>' + label + ' N' + z.level + '</b> — ' + z.coord + '<div class="gtmp-small">Rayon : ' + formatNumber(radius) + ' cases</div></div>' +
+                '<div><b>' + label + ' N' + z.level + '</b> — ' + z.coord + '<div class="wt-small">Rayon : ' + formatNumber(radius) + ' cases</div></div>' +
                 '<button class="gtmp-zone-delete" data-zone-id="' + z.id + '" title="Supprimer">×</button>' +
             '</div>';
         }).join('');
@@ -1598,28 +1400,26 @@
     function createUI() {
         $('#gt-map-planner-ui', doc).remove();
         injectStyle();
-        WEBITIME_UI.injectStyles();
-        if (typeof WEBITIME_UI.injectResourceStyles === 'function') WEBITIME_UI.injectResourceStyles(WEBITIME_RESOURCE_STYLE_ID);
 
         var panel = doc.createElement('div');
         panel.id = 'gt-map-planner-ui';
-        panel.className = 'vis widget wtri-panel';
+        panel.className = 'wt-panel gtmp-panel';
         panel.innerHTML =
-            '<div id="gtmp-title" class="gtmp-hero wtri-hero">' +
-                '<div class="gtmp-brand wtri-brand">' +
-                    '<div class="gtmp-logo wtri-logo" aria-hidden="true">🐼</div>' +
+            '<div id="gtmp-title" class="wt-hero">' +
+                '<div class="wt-brand">' +
+                    '<div class="wt-logo" aria-hidden="true">🐼</div>' +
                     '<div>' +
-                        '<div class="gtmp-main-title wtri-title"><span class="gtmp-title-webi wtri-title-webi">Webi-Time</span><span class="gtmp-title-tool wtri-title-tool"> Map Planner</span></div>' +
-                        '<div class="gtmp-byline wtri-byline">Adaptation par <b>' + WEBITIME_RESOURCE_AUTHOR + '</b> &nbsp;•&nbsp; Guerre Tribale</div>' +
-                        '<div class="gtmp-tagline wtri-tagline">Cartographier. Planifier. Couvrir. Garder le rythme.</div>' +
+                        '<div class="wt-title"><span class="wt-title-brand">Webi-Time</span><span class="wt-title-tool"> Map Planner</span></div>' +
+                        '<div class="wt-byline">Adaptation par <b>' + WEBITIME_RESOURCE_AUTHOR + '</b> &nbsp;•&nbsp; Guerre Tribale</div>' +
+                        '<div class="wt-tagline">Cartographier. Planifier. Couvrir. Garder le rythme.</div>' +
                     '</div>' +
                 '</div>' +
-                '<div class="gtmp-hero-motto wtri-hero-motto">CARTOGRAPHIER<br>PLANIFIER<br>COUVRIR<br>OPTIMISER</div>' +
+                '<div class="wt-hero-motto">CARTOGRAPHIER<br>PLANIFIER<br>COUVRIR<br>OPTIMISER</div>' +
                 '<span id="gtmp-close" title="Fermer">×</span>' +
             '</div>' +
-            '<div id="gtmp-body" class="wtri-body">' +
-                '<div id="gtmp-section-villages" class="gtmp-card wtri-card gtmp-section-card">' +
-                    '<div class="gtmp-caption gtmp-section-toggle" data-section="villages" role="button" tabindex="0" aria-expanded="true"><span>Villages affichés</span><span class="gtmp-section-chevron">▾</span></div>' +
+            '<div id="gtmp-body" class="wt-body">' +
+                '<div id="gtmp-section-villages" class="wt-card gtmp-section-card">' +
+                    '<div class="wt-card-title gtmp-section-toggle" data-section="villages" role="button" tabindex="0" aria-expanded="true"><span>Villages affichés</span><span class="gtmp-section-chevron">▾</span></div>' +
                     '<div class="gtmp-section-content">' +
                     '<div class="gtmp-filter-grid">' +
                         '<button class="gtmp-filter active" data-filter="all">Tous</button>' +
@@ -1651,7 +1451,7 @@
                     '</div>' +
                     '<div class="gtmp-label-row">' +
                         '<label class="gtmp-field-label" for="gtmp-label-mode">Libellé sous les villages</label>' +
-                        '<select id="gtmp-label-mode" class="gtmp-input">' +
+                        '<select id="gtmp-label-mode" class="wt-input">' +
                             '<option value="auto">Auto (pertinent)</option>' +
                             '<option value="village">Nom du village</option>' +
                             '<option value="player">Nom du joueur</option>' +
@@ -1661,47 +1461,47 @@
                             '<option value="none">Aucun</option>' +
                         '</select>' +
                     '</div>' +
-                    '<div id="gtmp-counts" class="gtmp-status">Chargement de la carte…</div>' +
-                    '<div class="gtmp-toggle-row" style="margin-top:7px;"><label class="gtmp-switch"><input id="gtmp-hide-attacks" type="checkbox"> Masquer attaques / retours</label><span style="color:#d6aa39;">⚔</span></div>' +
+                    '<div id="gtmp-counts" class="wt-status">Chargement de la carte…</div>' +
+                    '<div class="gtmp-toggle-row" style="margin-top:7px;"><label class="wt-check"><input id="gtmp-hide-attacks" type="checkbox"> Masquer attaques / retours</label><span style="color:#d6aa39;">⚔</span></div>' +
                     '</div>' +
                 '</div>' +
 
-                '<div id="gtmp-section-realZones" class="gtmp-card wtri-card gtmp-section-card">' +
-                    '<div class="gtmp-caption gtmp-section-toggle" data-section="realZones" role="button" tabindex="0" aria-expanded="true"><span>Zones réelles</span><span class="gtmp-section-chevron">▾</span></div>' +
+                '<div id="gtmp-section-realZones" class="wt-card gtmp-section-card">' +
+                    '<div class="wt-card-title gtmp-section-toggle" data-section="realZones" role="button" tabindex="0" aria-expanded="true"><span>Zones réelles</span><span class="gtmp-section-chevron">▾</span></div>' +
                     '<div class="gtmp-section-content">' +
-                    '<div class="gtmp-toggle-row"><label class="gtmp-switch"><input id="gtmp-show-real-church" type="checkbox" checked> Églises</label><span style="color:' + COLORS.churchReal + ';">●</span></div>' +
-                    '<div class="gtmp-toggle-row"><label class="gtmp-switch"><input id="gtmp-show-real-watch" type="checkbox" checked> Tours de guet</label><span style="color:' + COLORS.watchReal + ';">●</span></div>' +
-                    '<button id="gtmp-refresh-buildings" class="gtmp-btn" style="width:100%;margin-top:4px;">↻ Relire mes bâtiments</button>' +
-                    '<div id="gtmp-zone-status" class="gtmp-status">Chargement des bâtiments…</div>' +
+                    '<div class="gtmp-toggle-row"><label class="wt-check"><input id="gtmp-show-real-church" type="checkbox" checked> Églises</label><span style="color:' + COLORS.churchReal + ';">●</span></div>' +
+                    '<div class="gtmp-toggle-row"><label class="wt-check"><input id="gtmp-show-real-watch" type="checkbox" checked> Tours de guet</label><span style="color:' + COLORS.watchReal + ';">●</span></div>' +
+                    '<button id="gtmp-refresh-buildings" class="wt-btn" style="width:100%;margin-top:4px;">↻ Relire mes bâtiments</button>' +
+                    '<div id="gtmp-zone-status" class="wt-status">Chargement des bâtiments…</div>' +
                     '</div>' +
                 '</div>' +
 
-                '<div id="gtmp-section-plannedZones" class="gtmp-card wtri-card gtmp-section-card">' +
-                    '<div class="gtmp-caption gtmp-section-toggle" data-section="plannedZones" role="button" tabindex="0" aria-expanded="true"><span>Zones fictives</span><span class="gtmp-section-chevron">▾</span></div>' +
+                '<div id="gtmp-section-plannedZones" class="wt-card gtmp-section-card">' +
+                    '<div class="wt-card-title gtmp-section-toggle" data-section="plannedZones" role="button" tabindex="0" aria-expanded="true"><span>Zones fictives</span><span class="gtmp-section-chevron">▾</span></div>' +
                     '<div class="gtmp-section-content">' +
-                    '<div class="gtmp-toggle-row"><label class="gtmp-switch"><input id="gtmp-show-plan-church" type="checkbox" checked> Églises fictives</label><span style="color:' + COLORS.churchPlan + ';">◌</span></div>' +
-                    '<div class="gtmp-toggle-row"><label class="gtmp-switch"><input id="gtmp-show-plan-watch" type="checkbox" checked> Tours fictives</label><span style="color:' + COLORS.watchPlan + ';">◌</span></div>' +
+                    '<div class="gtmp-toggle-row"><label class="wt-check"><input id="gtmp-show-plan-church" type="checkbox" checked> Églises fictives</label><span style="color:' + COLORS.churchPlan + ';">◌</span></div>' +
+                    '<div class="gtmp-toggle-row"><label class="wt-check"><input id="gtmp-show-plan-watch" type="checkbox" checked> Tours fictives</label><span style="color:' + COLORS.watchPlan + ';">◌</span></div>' +
                     '<div class="gtmp-form-grid" style="margin-top:8px;">' +
-                        '<select id="gtmp-plan-type" class="gtmp-input"><option value="church">Église</option><option value="watchtower">Tour de guet</option></select>' +
-                        '<select id="gtmp-plan-level" class="gtmp-input">' + createLevelOptions('church', 1) + '</select>' +
+                        '<select id="gtmp-plan-type" class="wt-input"><option value="church">Église</option><option value="watchtower">Tour de guet</option></select>' +
+                        '<select id="gtmp-plan-level" class="wt-input">' + createLevelOptions('church', 1) + '</select>' +
                     '</div>' +
                     '<div class="gtmp-form-coord">' +
-                        '<input id="gtmp-plan-coord" class="gtmp-input" placeholder="Coordonnées 500|500" maxlength="7">' +
-                        '<button id="gtmp-use-center" class="gtmp-btn" title="Utiliser le centre actuel de la carte">◎ Centre</button>' +
-                        '<button id="gtmp-pick-coord" class="gtmp-btn gtmp-btn-picker" title="Cliquer ensuite directement sur une case de la carte">⌖ Sélectionner</button>' +
+                        '<input id="gtmp-plan-coord" class="wt-input" placeholder="Coordonnées 500|500" maxlength="7">' +
+                        '<button id="gtmp-use-center" class="wt-btn" title="Utiliser le centre actuel de la carte">◎ Centre</button>' +
+                        '<button id="gtmp-pick-coord" class="wt-btn gtmp-btn-picker" title="Cliquer ensuite directement sur une case de la carte">⌖ Sélectionner</button>' +
                     '</div>' +
                     '<div id="gtmp-picker-status" class="gtmp-picker-status"></div>' +
-                    '<button id="gtmp-add-zone" class="gtmp-btn gtmp-btn-primary" style="width:100%;margin-top:7px;">+ Ajouter la zone fictive</button>' +
-                    '<div class="gtmp-small" style="margin-top:6px;">Trait plein = réel · pointillé = fictif. Les zones fictives sont conservées pour ce monde.</div>' +
+                    '<button id="gtmp-add-zone" class="wt-btn wt-btn-primary" style="width:100%;margin-top:7px;">+ Ajouter la zone fictive</button>' +
+                    '<div class="wt-small" style="margin-top:6px;">Trait plein = réel · pointillé = fictif. Les zones fictives sont conservées pour ce monde.</div>' +
                     '<div id="gtmp-planned-list" class="gtmp-zone-list"></div>' +
-                    '<button id="gtmp-clear-zones" class="gtmp-btn gtmp-btn-danger" style="width:100%;margin-top:6px;">Supprimer toutes les zones fictives</button>' +
+                    '<button id="gtmp-clear-zones" class="wt-btn wt-btn-danger" style="width:100%;margin-top:6px;">Supprimer toutes les zones fictives</button>' +
                     '</div>' +
                 '</div>' +
             '</div>' +
-            '<div class="gtmp-footer wtri-footer">' +
-                '<span class="wtri-footer-left">Version ' + GT.version + '</span>' +
-                '<span class="gtmp-footer-center wtri-footer-center">INTELLIGENCE &nbsp;■&nbsp; ORGANISATION &nbsp;■&nbsp; SUPÉRIORITÉ</span>' +
-                '<span class="gtmp-footer-right wtri-footer-right">🐼 <b>Webi-Time</b></span>' +
+            '<div class="wt-footer">' +
+                '<span class="wt-footer-left">Version ' + GT.version + '</span>' +
+                '<span class="wt-footer-center">INTELLIGENCE &nbsp;■&nbsp; ORGANISATION &nbsp;■&nbsp; SUPÉRIORITÉ</span>' +
+                '<span class="wt-footer-right">🐼 <b>Webi-Time</b></span>' +
             '</div>';
 
         doc.body.appendChild(panel);

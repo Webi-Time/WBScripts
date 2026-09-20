@@ -1,7 +1,7 @@
 (async function () {
     'use strict';
 
-    const SCRIPT_VERSION = '4.20';
+    const SCRIPT_VERSION = '4.21';
 
     // Signature runtime volontairement répartie en plusieurs fragments.
     // Le nom reste lisible dans l'en-tête documentaire ci-dessous, mais
@@ -49,6 +49,7 @@
     // - v4.16 : fenêtre de redirection Webi-Time + bouton Paramètres (données enregistrées / signalement de bug)
     // - v4.18 : CSS et composants UI communs externalisés dans WebiTime_GT_Common.js
     // - v4.20 : chargeur autonome du composant commun avec fallback GitHub Pages / jsDelivr
+    // - v4.21 : composants visuels génériques wt-* unifiés dans WebiTime_GT_Common.js
     // - v4.17 : composants Webi-Time communs avec Rename Attaques + tailles de police harmonisées
     //
     // Base technique inspiree de Set/Get Village Notes (RedAlert/JawJaw) :
@@ -384,19 +385,19 @@
         const html = `
 
 
-            <div id="${BOX_ID}" class="vis">
-                <div class="gtiv-hero">
-                    <div class="gtiv-brand">
-                        <div class="gtiv-logo" aria-hidden="true">🐼</div>
+            <div id="${BOX_ID}" class="vis wt-panel">
+                <div class="wt-hero">
+                    <div class="wt-brand">
+                        <div class="wt-logo" aria-hidden="true">🐼</div>
                         <div>
-                            <div class="gtiv-title">
-                                <span class="gtiv-title-webi">Webi-Time</span><span class="gtiv-title-intel"> Intel Villages</span>
+                            <div class="wt-title">
+                                <span class="wt-title-brand">Webi-Time</span><span class="wt-title-tool"> Intel Villages</span>
                             </div>
-                            <div class="gtiv-byline">Par <b>${author}</b> &nbsp;•&nbsp; Renseignement DEFF / OFF / bâtiments</div>
-                            <div class="gtiv-tagline">Des rapports aux infos. Des infos aux victoires.</div>
+                            <div class="wt-byline">Par <b>${author}</b> &nbsp;•&nbsp; Renseignement DEFF / OFF / bâtiments</div>
+                            <div class="wt-tagline">Des rapports aux infos. Des infos aux victoires.</div>
                         </div>
                     </div>
-                    <div class="gtiv-hero-motto">
+                    <div class="wt-hero-motto">
                         ANALYSER<br>
                         COMPRENDRE<br>
                         NOTER<br>
@@ -404,39 +405,39 @@
                     </div>
                 </div>
 
-                <div class="gtiv-body">
+                <div class="wt-body">
                     <div class="gtiv-controls">
-                        <div class="gtiv-card">
-                            <span class="gtiv-card-title">Rapports</span>
-                            <select id="${PREFIX}Source" class="input-nicer">
+                        <div class="wt-card">
+                            <span class="wt-card-title">Rapports</span>
+                            <select id="${PREFIX}Source" class="wt-input">
                                 <option value="SELECTED">Cochés</option>
                                 <option value="PAGE">Tous ceux de cette page</option>
                                 <option value="UNREAD_ALL">Tous les non lus (toutes les pages)</option>
                             </select>
                         </div>
 
-                        <div class="gtiv-card">
-                            <span class="gtiv-card-title">Village à noter</span>
-                            <select id="${PREFIX}Target" class="input-nicer">
+                        <div class="wt-card">
+                            <span class="wt-card-title">Village à noter</span>
+                            <select id="${PREFIX}Target" class="wt-input">
                                 <option value="AUTO">Auto</option>
                                 <option value="ATTACKER">Attaquant</option>
                                 <option value="DEFENDER">Défenseur</option>
                             </select>
                         </div>
 
-                        <div class="gtiv-card gtiv-options">
-                            <label class="gtiv-check">
+                        <div class="wt-card gtiv-options">
+                            <label class="wt-check">
                                 <input type="checkbox" id="${PREFIX}Protect" checked>
                                 <span>Ne pas écraser une note manuelle</span>
                             </label>
-                            <label class="gtiv-check">
+                            <label class="wt-check">
                                 <input type="checkbox" id="${PREFIX}DebugOpen">
                                 <span>Debug : ouvrir les rapports retenus</span>
                             </label>
                         </div>
 
-                        <div class="gtiv-action">
-                            <button id="${PREFIX}Run" class="btn gtiv-run">⌕&nbsp; Analyser + noter</button>
+                        <div class="wt-card gtiv-action">
+                            <button id="${PREFIX}Run" class="btn wt-btn wt-btn-primary gtiv-run">⌕&nbsp; Analyser + noter</button>
                         </div>
                     </div>
 
@@ -498,13 +499,13 @@
                         <div id="${PREFIX}Log"></div>
                     </div>
 
-                    <div class="gtiv-footer">
-                        <span class="gtiv-footer-left">
+                    <div class="wt-footer">
+                        <span class="wt-footer-left">
                             ${WEBITIME_UI.buildSettingsMarkup(PREFIX + 'ClearSaved', PREFIX + 'ReportBug')}
                             <span>Version ${SCRIPT_VERSION}</span>
                         </span>
-                        <span class="gtiv-footer-center">Intelligence &nbsp;■&nbsp; Organisation &nbsp;■&nbsp; Supériorité</span>
-                        <span class="gtiv-footer-right">🐼 <b>Webi-Time</b> &nbsp;|&nbsp; réalisé par ${author}</span>
+                        <span class="wt-footer-center">Intelligence &nbsp;■&nbsp; Organisation &nbsp;■&nbsp; Supériorité</span>
+                        <span class="wt-footer-right">🐼 <b>Webi-Time</b> &nbsp;|&nbsp; réalisé par ${author}</span>
                     </div>
                 </div>
             </div>

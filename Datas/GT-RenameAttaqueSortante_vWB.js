@@ -25,7 +25,7 @@ var forceRename = true;
 
 const WEBITIME_RENAME_NAME = 'Webi-Time Rename Attaques';
 const WEBITIME_RENAME_AUTHOR = 'NoLife4Ever';
-const WEBITIME_RENAME_VERSION = '1.13'; // CSS/UI partagés via WebiTime_GT_Common.js
+const WEBITIME_RENAME_VERSION = '1.14'; // CSS/UI partagés via WebiTime_GT_Common.js
 const WEBITIME_RENAME_STYLE_ID = 'webiTimeRenameAttackStyle';
 const WEBITIME_SOURCE_URL = 'https://github.com/Webi-Time/WBScripts/tree/GT/Datas';
 const WEBITIME_COMMON_URL = 'https://webi-time.github.io/WBScripts/Datas/WebiTime_GT_Common.js';
@@ -121,8 +121,8 @@ function buildAttackTypeRow(index, name, min, disabled, removable) {
 
     return (
         '<div class="btn_group wtra-attack-row"' + rowId + '>' +
-            '<input id="nameNuke' + index + '" value="' + escapeWebiAttr(name) + '" class="nameInput wtra-input" type="text" placeholder="' + escapeWebiAttr(translator('attackName')) + '" />' +
-            '<input id="minNb' + index + '" value="' + escapeWebiAttr(min) + '" class="valueInput wtra-input" type="text" placeholder="' + escapeWebiAttr(translator('minNumber')) + '"' + disabledAttr + ' />' +
+            '<input id="nameNuke' + index + '" value="' + escapeWebiAttr(name) + '" class="nameInput wt-input" type="text" placeholder="' + escapeWebiAttr(translator('attackName')) + '" />' +
+            '<input id="minNb' + index + '" value="' + escapeWebiAttr(min) + '" class="valueInput wt-input" type="text" placeholder="' + escapeWebiAttr(translator('minNumber')) + '"' + disabledAttr + ' />' +
             removeButton +
         '</div>'
     );
@@ -405,19 +405,19 @@ function drawStep1()
     $('#openDiv').remove();
 
     const html = `
-        <div id="openDiv" class="wtra-panel">
-            <div class="wtra-hero">
-                <div class="wtra-brand">
-                    <div class="wtra-logo" aria-hidden="true">🐼</div>
+        <div id="openDiv" class="wt-panel">
+            <div class="wt-hero">
+                <div class="wt-brand">
+                    <div class="wt-logo" aria-hidden="true">🐼</div>
                     <div>
-                        <div class="wtra-title">
-                            <span class="wtra-title-webi">Webi-Time</span><span class="wtra-title-tool"> Rename Attaques</span>
+                        <div class="wt-title">
+                            <span class="wt-title-brand">Webi-Time</span><span class="wt-title-tool"> Rename Attaques</span>
                         </div>
-                        <div class="wtra-byline">par <b>${WEBITIME_RENAME_AUTHOR}</b> &nbsp;•&nbsp; gestion des attaques sortantes</div>
-                        <div class="wtra-tagline">Des ordres propres. Des timings lisibles. Une vue plus efficace.</div>
+                        <div class="wt-byline">par <b>${WEBITIME_RENAME_AUTHOR}</b> &nbsp;•&nbsp; gestion des attaques sortantes</div>
+                        <div class="wt-tagline">Des ordres propres. Des timings lisibles. Une vue plus efficace.</div>
                     </div>
                 </div>
-                <div class="wtra-hero-motto">
+                <div class="wt-hero-motto">
                     IDENTIFIER<br>
                     CLASSER<br>
                     RENOMMER<br>
@@ -425,22 +425,22 @@ function drawStep1()
                 </div>
             </div>
 
-            <div class="wtra-body">
-                <div class="wtra-intro">
+            <div class="wt-body">
+                <div class="wt-card wtra-intro">
                     <b>${translator('renameOrder')}</b><br>
                     <span>${translator('explanation')}</span>
                 </div>
                 <div class="wtra-actions">
-                    <button class="btn wtra-btn" id="process">⚡ ${translator('rename')}</button>
-                    <button name="setup" id="showParameters" class="btn wtra-btn wtra-btn-secondary">⚙ ${translator('attackPerso')}</button>
+                    <button class="btn wt-btn wt-btn-primary" id="process">⚡ ${translator('rename')}</button>
+                    <button name="setup" id="showParameters" class="btn wt-btn wt-btn-secondary">⚙ ${translator('attackPerso')}</button>
                 </div>
-                <div class="wtra-footer">
-                    <span class="wtra-footer-left">
+                <div class="wt-footer">
+                    <span class="wt-footer-left">
                         ${WEBITIME_UI.buildSettingsMarkup('wtra_clear_saved_data', 'wtra_report_bug')}
                         <span>Version ${WEBITIME_RENAME_VERSION}</span>
                     </span>
-                    <span class="wtra-footer-center">Intelligence &nbsp;■&nbsp; Organisation &nbsp;■&nbsp; Supériorité</span>
-                    <span class="wtra-footer-right">🐼 <b>Webi-Time</b> &nbsp;|&nbsp; réalisé par ${WEBITIME_RENAME_AUTHOR}</span>
+                    <span class="wt-footer-center">Intelligence &nbsp;■&nbsp; Organisation &nbsp;■&nbsp; Supériorité</span>
+                    <span class="wt-footer-right">🐼 <b>Webi-Time</b> &nbsp;|&nbsp; réalisé par ${WEBITIME_RENAME_AUTHOR}</span>
                 </div>
             </div>
         </div>`;
@@ -510,7 +510,7 @@ function AddButtonType() {
     return (
         '<div class="wtra-types-toolbar">' +
             '<div class="wtra-types-toolbar-title">Types d\'attaque</div>' +
-            '<button id="addAttackType" type="button" onclick="addTypeAttack()" class="btn wtra-btn wtra-add">+ Ajouter un type</button>' +
+            '<button id="addAttackType" type="button" onclick="addTypeAttack()" class="btn wt-btn wtra-add">+ Ajouter un type</button>' +
         '</div>' +
         '<div class="wtra-types-head">' +
             '<span>' + escapeWebiAttr(translator('attaqueName')) + '</span>' +
@@ -524,17 +524,17 @@ function drawPopupStep1()
     injectWebiTimeRenameStyles();
 
     const step1_html =
-        '<div class="wtra-section-title">Configuration du renommage</div>' +
-        '<div class="wtra-option-grid">' +
-            '<label class="wtra-option">' +
+        '<div class="wt-section-title">Configuration du renommage</div>' +
+        '<div class="wt-option-grid">' +
+            '<label class="wt-option">' +
                 '<input onclick="handleRenamePlayer()" type="checkbox" id="renamePlayer">' +
                 '<span>Inclure le nom du joueur cible</span>' +
             '</label>' +
-            '<label class="wtra-option">' +
+            '<label class="wt-option">' +
                 '<input onclick="handleRenameVillage()" type="checkbox" id="renameVillage">' +
                 '<span>Inclure le nom du village cible</span>' +
             '</label>' +
-            '<label class="wtra-option">' +
+            '<label class="wt-option">' +
                 '<input onclick="handleRenameTroupes()" type="checkbox" id="renameTroupes">' +
                 '<span>Inclure le détail des troupes</span>' +
             '</label>' +
@@ -975,21 +975,21 @@ function drawSkeletonPopup(popup_id){
             '<div id="close_popup_div" class="wtra-overlay"></div>' +
             '<div class="wtra-modal-wrap">' +
                 '<div class="wtra-modal">' +
-                    '<div class="wtra-hero">' +
-                        '<div class="wtra-brand">' +
-                            '<div class="wtra-logo" aria-hidden="true">🐼</div>' +
+                    '<div class="wt-hero">' +
+                        '<div class="wt-brand">' +
+                            '<div class="wt-logo" aria-hidden="true">🐼</div>' +
                             '<div>' +
-                                '<div class="wtra-title"><span class="wtra-title-webi">Webi-Time</span><span class="wtra-title-tool"> Rename Attaques</span></div>' +
-                                '<div class="wtra-byline">par <b>' + WEBITIME_RENAME_AUTHOR + '</b> &nbsp;•&nbsp; paramètres de renommage</div>' +
-                                '<div class="wtra-tagline">Personnalise le nom des attaques sans perdre la lisibilité.</div>' +
+                                '<div class="wt-title"><span class="wt-title-brand">Webi-Time</span><span class="wt-title-tool"> Rename Attaques</span></div>' +
+                                '<div class="wt-byline">par <b>' + WEBITIME_RENAME_AUTHOR + '</b> &nbsp;•&nbsp; paramètres de renommage</div>' +
+                                '<div class="wt-tagline">Personnalise le nom des attaques sans perdre la lisibilité.</div>' +
                             '</div>' +
                         '</div>' +
-                        '<div class="wtra-hero-motto">CONFIGURER<br>CLASSER<br>SAUVEGARDER</div>' +
+                        '<div class="wt-hero-motto">CONFIGURER<br>CLASSER<br>SAUVEGARDER</div>' +
                     '</div>' +
                     '<div id="popupcontainer" class="wtra-popup-body"></div>' +
                     '<div class="wtra-modal-footer">' +
                         '<div class="wtra-modal-footer-note"><b style="color:#37dcff;">Webi-Time</b> • configuration mémorisée pour les prochaines utilisations</div>' +
-                        '<button id="close_popup" class="btn wtra-btn wtra-save">✓ ' + escapeWebiAttr(translator('save')) + '</button>' +
+                        '<button id="close_popup" class="btn wt-btn wt-btn-primary wtra-save">✓ ' + escapeWebiAttr(translator('save')) + '</button>' +
                     '</div>' +
                 '</div>' +
             '</div>' +
