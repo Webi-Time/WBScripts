@@ -42,7 +42,7 @@ function createWebiTimeSharedUi() {
             fonts: Object.freeze({
                 title: '25px',
                 body: '15px',
-                small: '14px',
+                small: '15px',
                 compact: '13px',
                 footer: '12px',
                 modalTitle: '20px'
@@ -1643,7 +1643,6 @@ function createWebiTimeSharedUi() {
                 #gt-map-planner-ui .wt-logo { flex-basis:42px; width:42px; height:42px; border-radius:11px; font-size:25px; }
                 #gt-map-planner-ui .wt-title { font-size:17px; }
                 #gt-map-planner-ui .wt-byline, #gt-map-planner-ui .wt-tagline { font-size:10px; }
-                #gt-map-planner-ui .wt-hero-motto { font-size:8px; line-height:1.38; letter-spacing:1.2px; padding-right:18px; }
 
                 #gtmp-close { position:absolute; z-index:5; right:8px; top:7px; width:22px; height:22px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#aaaaaa; font-size:18px; line-height:22px; border-radius:6px; }
                 #gtmp-close:hover { background:rgba(255,91,114,.16); color:#ffb3bf; }
