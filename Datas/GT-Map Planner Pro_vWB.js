@@ -2,7 +2,7 @@
     'use strict';
 
     /*
-     * Webi-Time Map Planner v3.1.5
+     * Webi-Time Map Planner v3.1.6
      * - Synchronisation Villages affichés <-> Types de bonus
      * - "Tous" réinitialise automatiquement "Tous les bonus"
      * - Moteur de masquage attaques/retours restauré depuis la v3.1.1 (version validée)
@@ -12,69 +12,174 @@
 
     const WEBITIME_RESOURCE_NAME = 'Webi-Time Map Planner';
     const WEBITIME_RESOURCE_AUTHOR = 'NoLife4Ever';
-    const WEBITIME_RESOURCE_VERSION = '3.1.5';
+    const WEBITIME_RESOURCE_VERSION = '3.1.6';
     const WEBITIME_RESOURCE_STYLE_ID = 'webiTimeMapPlannerStyle';
     const WEBITIME_SOURCE_URL = 'https://github.com/Webi-Time/WBScripts/tree/GT/Datas';
     const WEBITIME_COMMON_URL = 'https://webi-time.github.io/WBScripts/Datas/WebiTime_GT_Common.js';
     const WEBITIME_COMMON_FALLBACK_URL = 'https://cdn.jsdelivr.net/gh/Webi-Time/WBScripts@GT/Datas/WebiTime_GT_Common.js';
-    const WEBITIME_RESOURCE_SCRIPT_SRC = (document.currentScript && document.currentScript.src) || '';
 
-    async function ensureWebiTimeCommon() {
+    /*
+     * IMPORTANT :
+     * Sur la carte Guerre Tribale, le contexte utile peut être window.main.
+     * On détermine donc win/doc AVANT de charger WebiTime_GT_Common.js pour
+     * que le composant partagé soit exécuté dans la même fenêtre que TWMap.
+     */
+    var win = (window.frames.length > 0 && window.main) ? window.main : window;
+    var doc = win.document;
+    var $ = win.jQuery || window.jQuery;
+
+    /*
+     * document.currentScript n'est pas toujours renseigné avec $.getScript().
+     * On l'utilise quand même comme optimisation, mais jamais comme dépendance.
+     */
+    const WEBITIME_RESOURCE_SCRIPT_SRC =
+        (doc.currentScript && doc.currentScript.src) ||
+        (document.currentScript && document.currentScript.src) ||
+        '';
+
+    function getExistingWebiTimeCommon() {
+        if (win.WebiTimeGT && typeof win.WebiTimeGT.injectStyles === 'function') {
+            return win.WebiTimeGT;
+        }
+
         if (window.WebiTimeGT && typeof window.WebiTimeGT.injectStyles === 'function') {
+            /*
+             * Si le composant a déjà été chargé dans la fenêtre parente,
+             * on peut le réutiliser directement.
+             */
+            try {
+                win.WebiTimeGT = window.WebiTimeGT;
+            } catch (_) {}
             return window.WebiTimeGT;
         }
 
+        return null;
+    }
+
+    function loadCommonScript(url) {
+        return new Promise((resolve, reject) => {
+            const script = doc.createElement('script');
+            script.type = 'text/javascript';
+            script.src = url;
+            script.async = true;
+
+            script.onload = function () {
+                const api = getExistingWebiTimeCommon();
+                if (api) {
+                    resolve(api);
+                } else {
+                    reject(new Error(
+                        'Le fichier a été chargé mais window.WebiTimeGT est absent : ' + url
+                    ));
+                }
+            };
+
+            script.onerror = function () {
+                reject(new Error('Chargement impossible : ' + url));
+            };
+
+            (doc.head || doc.documentElement).appendChild(script);
+        });
+    }
+
+    async function ensureWebiTimeCommon() {
+        const existing = getExistingWebiTimeCommon();
+        if (existing) return existing;
+
         const candidates = [];
+
+        /*
+         * 1. Même dossier que le Map Planner lorsque currentScript est connu.
+         */
         try {
             if (WEBITIME_RESOURCE_SCRIPT_SRC) {
-                const relativeUrl = new URL('WebiTime_GT_Common.js', WEBITIME_RESOURCE_SCRIPT_SRC);
+                const relativeUrl = new URL(
+                    'WebiTime_GT_Common.js',
+                    WEBITIME_RESOURCE_SCRIPT_SRC
+                );
                 relativeUrl.searchParams.set('_wt', Date.now());
                 candidates.push(relativeUrl.href);
             }
-        } catch (_) {}
+        } catch (error) {
+            console.warn(
+                '[Webi-Time Map Planner] URL relative du composant commun invalide.',
+                error
+            );
+        }
 
+        /*
+         * 2. GitHub Pages officiel.
+         * 3. jsDelivr sur la branche GT.
+         */
         candidates.push(WEBITIME_COMMON_URL + '?_wt=' + Date.now());
         candidates.push(WEBITIME_COMMON_FALLBACK_URL + '?_wt=' + Date.now());
 
         const tried = new Set();
+
         for (const url of candidates) {
             if (!url || tried.has(url)) continue;
             tried.add(url);
+
             try {
-                await new Promise((resolve, reject) => {
-                    const script = document.createElement('script');
-                    script.src = url;
-                    script.async = true;
-                    script.onload = resolve;
-                    script.onerror = () => reject(new Error('Chargement impossible : ' + url));
-                    (document.head || document.documentElement).appendChild(script);
-                });
-                if (window.WebiTimeGT && typeof window.WebiTimeGT.injectStyles === 'function') {
-                    return window.WebiTimeGT;
+                console.debug(
+                    '[Webi-Time Map Planner] Chargement WebiTime_GT_Common.js :',
+                    url
+                );
+
+                const api = await loadCommonScript(url);
+                if (api) {
+                    console.debug(
+                        '[Webi-Time Map Planner] WebiTime_GT_Common.js chargé :',
+                        url
+                    );
+                    return api;
                 }
             } catch (error) {
-                console.warn('[Webi-Time Map Planner] Échec du chargement commun :', url, error);
+                console.warn(
+                    '[Webi-Time Map Planner] Échec du chargement commun :',
+                    url,
+                    error
+                );
             }
         }
-        return null;
+
+        /*
+         * Dernière vérification : dans certains navigateurs le script a pu
+         * terminer son initialisation juste après l'événement load.
+         */
+        await new Promise(resolve => win.setTimeout(resolve, 50));
+        return getExistingWebiTimeCommon();
     }
 
     const WEBITIME_UI = await ensureWebiTimeCommon();
+
     if (!WEBITIME_UI) {
-        console.error('[Webi-Time Map Planner] Impossible de charger WebiTime_GT_Common.js.');
-        if (typeof UI !== 'undefined' && UI.ErrorMessage) {
-            UI.ErrorMessage('Impossible de charger le composant Webi-Time commun.');
+        console.error(
+            '[Webi-Time Map Planner] Impossible de charger WebiTime_GT_Common.js.',
+            {
+                windowHasWebiTimeGT: !!window.WebiTimeGT,
+                mainHasWebiTimeGT: !!(win && win.WebiTimeGT),
+                hasJQueryTop: !!window.jQuery,
+                hasJQueryMain: !!(win && win.jQuery),
+                commonUrl: WEBITIME_COMMON_URL,
+                fallbackUrl: WEBITIME_COMMON_FALLBACK_URL
+            }
+        );
+
+        if (typeof win.UI !== 'undefined' && win.UI.ErrorMessage) {
+            win.UI.ErrorMessage(
+                'Impossible de charger le composant Webi-Time commun. Voir la console.'
+            );
+        } else if (typeof UI !== 'undefined' && UI.ErrorMessage) {
+            UI.ErrorMessage(
+                'Impossible de charger le composant Webi-Time commun. Voir la console.'
+            );
         }
+
         return;
     }
-    WEBITIME_UI.injectStyles();
-    if (typeof WEBITIME_UI.injectResourceStyles === 'function') {
-        WEBITIME_UI.injectResourceStyles(WEBITIME_RESOURCE_STYLE_ID);
-    }
 
-    var win = (window.frames.length > 0 && window.main) ? window.main : window;
-    var doc = win.document;
-    var $ = win.jQuery || window.jQuery;
+    WEBITIME_UI.injectStyles();
 
     if (!win.game_data) {
         alert('Impossible de lire game_data. Recharge la page puis relance le script.');
