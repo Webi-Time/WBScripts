@@ -44,7 +44,7 @@ function createWebiTimeSharedUi() {
                 body: '15px',
                 small: '15px',
                 compact: '14px',
-                footer: '13px',
+                footer: '12px',
                 modalTitle: '20px'
             })
         });
@@ -1642,7 +1642,7 @@ function createWebiTimeSharedUi() {
                 #gt-map-planner-ui .wt-hero { min-height:auto; padding:12px 14px; }
                 #gt-map-planner-ui .wt-logo { flex-basis:42px; width:42px; height:42px; border-radius:11px; font-size:25px; }
                 #gt-map-planner-ui .wt-title { font-size:17px; }
-                #gt-map-planner-ui .wt-byline, #gt-map-planner-ui .wt-tagline { font-size:10px; }
+                #gt-map-planner-ui .wt-byline, #gt-map-planner-ui .wt-tagline { font-size:12px; }
                 #gt-map-planner-ui .wt-hero-motto { font-size:12px; line-height:1.38; letter-spacing:1.2px; padding-right:18px; }
                 
 
@@ -1677,7 +1677,7 @@ function createWebiTimeSharedUi() {
                 .gtmp-bonus-filter-title-main { display:flex; align-items:center; gap:6px; }
                 .gtmp-bonus-filter-title-main:before { content:'◆'; color:var(--webi-orange); font-size:8px; text-shadow:0 0 6px rgba(255,152,0,.35); }
                 .gtmp-bonus-filter-meta { display:flex; align-items:center; gap:7px; }
-                .gtmp-bonus-multi { color:#888888; font-size:9px; font-weight:600; text-transform:none; letter-spacing:0; }
+                .gtmp-bonus-multi { color:#888888; font-size:11px; font-weight:600; text-transform:none; letter-spacing:0; }
                 .gtmp-bonus-filter-content { max-height:260px; opacity:1; overflow:hidden; transition:max-height .22s ease,opacity .16s ease,margin .22s ease; }
                 .gtmp-bonus-filter-wrap.collapsed .gtmp-bonus-filter-title { margin-bottom:0; }
                 .gtmp-bonus-filter-wrap.collapsed .gtmp-bonus-filter-content { max-height:0; opacity:0; margin:0; pointer-events:none; }
