@@ -40,12 +40,12 @@ function createWebiTimeSharedUi() {
                 muted: '#a8a8a8'
             }),
             fonts: Object.freeze({
-                title: '24px',
-                body: '14px',
-                small: '13px',
-                compact: '12px',
-                footer: '11px',
-                modalTitle: '19px'
+                title: '25px',
+                body: '15px',
+                small: '14px',
+                compact: '13px',
+                footer: '12px',
+                modalTitle: '20px'
             })
         });
 
@@ -824,7 +824,7 @@ function createWebiTimeSharedUi() {
                 .wt-section-title::before {
                     content: "";
                     width: 4px;
-                    height: 14px;
+                    height: 15px;
                     flex: 0 0 4px;
                     border-radius: 4px;
                     background: var(--webi-orange);
