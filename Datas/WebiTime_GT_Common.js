@@ -41,7 +41,7 @@ function createWebiTimeSharedUi() {
             }),
             fonts: Object.freeze({
                 title: '25px',
-                body: '16px',
+                body: '15px',
                 small: '15px',
                 compact: '14px',
                 footer: '13px',
