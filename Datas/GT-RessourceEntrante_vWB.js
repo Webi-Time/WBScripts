@@ -33,7 +33,7 @@
 (async function() {
     const WEBITIME_RESOURCE_NAME = 'Webi-Time Ressources Entrantes';
     const WEBITIME_RESOURCE_AUTHOR = 'NoLife4Ever';
-    const WEBITIME_RESOURCE_VERSION = '1.0';
+    const WEBITIME_RESOURCE_VERSION = '1.2';
     const WEBITIME_RESOURCE_STYLE_ID = 'webiTimeIncomingResourcesStyle';
     const WEBITIME_SOURCE_URL = 'https://github.com/Webi-Time/WBScripts/tree/GT/Datas';
     const WEBITIME_COMMON_URL = 'https://webi-time.github.io/WBScripts/Datas/WebiTime_GT_Common.js';
@@ -2515,7 +2515,6 @@
                 this.$from = this.$el.find('#twcheese_pillaging_stats_from');
                 this.$to = this.$el.find('#twcheese_pillaging_stats_to');
                 this.$sum = this.$el.find('#twcheese_pillaging_results');
-                this.$toggleIcon = this.$el.find('#twcheese_pillaging_stats_toggle');
                 this.$content = this.$el.find('#twcheese_pillaging_stats_content');
             }
 
@@ -2564,11 +2563,7 @@
                 }
 
                 let pageInfo = this.pageNumber ? ` • page ${this.pageNumber}` : '';
-                let collapsed = userConfig.get('HaulStatsWidget.collapseStats', false);
-                let toggleIconSrc = collapsed ? ImageSrc["a" /* ImageSrc */].plus : ImageSrc["a" /* ImageSrc */].minus;
-                let contentDisplay = collapsed ? 'none' : 'block';
-
-                return `
+return `
                     <div id="twcheese_pillaging_stats" class="vis widget wtri-panel">
                         <div class="wtri-hero">
                             <div class="wtri-brand">
@@ -2590,7 +2585,7 @@
                         </div>
 
                         <div class="wtri-body">
-                            <div id="twcheese_pillaging_stats_content" style="display:${contentDisplay};">
+                            <div id="twcheese_pillaging_stats_content">
                                 <div class="wtri-summary">
                                     <div class="wtri-card">
                                         <span class="wtri-card-title">Période analysée</span>
@@ -2611,9 +2606,6 @@
                                 <div class="wtri-table-card">
                                     <div class="wtri-table-head">
                                         <div class="wtri-table-title">Ressources entrantes par heure${pageInfo}</div>
-                                        <button type="button" class="wtri-collapse" title="Réduire / développer">
-                                            <img id="twcheese_pillaging_stats_toggle" src="${toggleIconSrc}" alt="Réduire / développer">
-                                        </button>
                                     </div>
                                     <div class="wtri-table-wrap">
                                         <table class="wtri-table twcheese-pillaging-stats-hourly-breakdown">
@@ -2657,10 +2649,6 @@
             }
 
             watchSelf() {
-                this.$toggleIcon.on('click', (e) => {
-                    e.preventDefault();
-                    this.toggleCollapse();
-                });
                 this.$to.on('change', () => this.updateSum());
                 this.$from.on('change', () => this.updateSum());
             }
@@ -2684,17 +2672,6 @@
                 `);
             }
 
-            toggleCollapse() {
-                let $toggleIcon = this.$toggleIcon;
-                this.$content.toggle({
-                    duration: 200,
-                    start: function() {
-                        let willCollapse = $toggleIcon.attr('src').includes(ImageSrc["a" /* ImageSrc */].minus);
-                        $toggleIcon.attr('src', willCollapse ? ImageSrc["a" /* ImageSrc */].plus : ImageSrc["a" /* ImageSrc */].minus);
-                        userConfig.set('HaulStatsWidget.collapseStats', willCollapse);
-                    }
-                });
-            }
         }
 
         
