@@ -42,7 +42,7 @@ function createWebiTimeSharedUi() {
             fonts: Object.freeze({
                 title: '25px',
                 body: '15px',
-                small: '15px',
+                small: '14px',
                 compact: '14px',
                 footer: '12px',
                 modalTitle: '20px'
