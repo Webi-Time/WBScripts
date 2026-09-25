@@ -1,6 +1,6 @@
 /*
  * Webi-Time - GT Balance Entrepot
- * Version : 1.3.0
+ * Version : 1.3.1
  * Auteur  : NoLife4Ever / Webi-Time
  *
  * Base fonctionnelle inspiree du "Warehouse balancer" de Sophie "Shinko to Kuma".
@@ -24,7 +24,7 @@
 
     const SCRIPT = Object.freeze({
         name: 'GT Balance Entrepôt',
-        version: '1.3.0',
+        version: '1.3.1',
         prefix: 'wtwb'
     });
 
@@ -250,6 +250,31 @@
         return 0;
     }
 
+    function extractTransportTargetId(href) {
+        if (!href) return '';
+        try {
+            const url = new URL(href, window.location.origin);
+
+            // Sur GT, un lien vers un village peut contenir simultanément :
+            //   village=<village actuellement sélectionné>
+            //   id=<village réellement affiché / destinataire>
+            // Pour les transports entrants, `id` est donc prioritaire.
+            const explicitId = url.searchParams.get('id') ||
+                               url.searchParams.get('target_id') ||
+                               url.searchParams.get('target');
+            if (explicitId && /^\d+$/.test(explicitId)) return explicitId;
+
+            const villageId = url.searchParams.get('village');
+            if (villageId && /^\d+$/.test(villageId)) return villageId;
+        } catch (_) {
+            const idMatch = String(href).match(/[?&](?:id|target_id|target)=(\d+)/);
+            if (idMatch) return idMatch[1];
+            const villageMatch = String(href).match(/[?&]village=(\d+)/);
+            if (villageMatch) return villageMatch[1];
+        }
+        return '';
+    }
+
     function parseIncomingResources(html) {
         const doc = parseHtml(html);
         const result = {};
@@ -268,18 +293,38 @@
                 const mobileCandidate = cells[3] && cells[3].children[2] && cells[3].children[2].href;
                 const desktopCandidate = cells[4] && cells[4].children[0] && cells[4].children[0].href;
                 const href = desktopCandidate || mobileCandidate || '';
-                const m = href.match(/[?&](?:id|village)=(\d+)/);
-                if (m) targetId = m[1];
+                targetId = extractTransportTargetId(href);
             } catch (_) {}
 
             if (!targetId) {
                 const candidates = [...row.querySelectorAll('a[href]')];
-                for (const a of candidates.reverse()) {
-                    const m = a.href.match(/[?&](?:id|village)=(\d+)/);
-                    if (m) {
-                        targetId = m[1];
-                        break;
-                    }
+
+                // Premier passage : rechercher un identifiant explicite `id=`.
+                // Cela évite de confondre la destination avec le paramètre
+                // `village=` ajouté par GT à presque tous les liens de la page.
+                for (const a of candidates) {
+                    try {
+                        const url = new URL(a.href, window.location.origin);
+                        const explicitId = url.searchParams.get('id') ||
+                                           url.searchParams.get('target_id') ||
+                                           url.searchParams.get('target');
+                        if (explicitId && /^\d+$/.test(explicitId)) {
+                            targetId = explicitId;
+                            break;
+                        }
+                    } catch (_) {}
+                }
+
+                // Fallback seulement si la structure ne fournit réellement aucun `id=`.
+                if (!targetId) {
+                    const currentVillageId = String(window.game_data?.village?.id || '');
+                    const fallbackIds = candidates
+                        .map(a => extractTransportTargetId(a.href))
+                        .filter(Boolean);
+
+                    // Si plusieurs IDs existent, éviter autant que possible l'ID du
+                    // village courant : c'est souvent simplement le contexte de navigation.
+                    targetId = fallbackIds.find(id => id !== currentVillageId) || fallbackIds[0] || '';
                 }
             }
 
@@ -1317,6 +1362,12 @@
                 .sort((a, b) => a.points - b.points);
 
             state.villageById = new Map(state.villages.map(v => [v.id, v]));
+
+            // Ne conserver que les transports entrants rattachés à un village
+            // réellement présent dans le groupe analysé.
+            state.incoming = Object.fromEntries(
+                Object.entries(state.incoming).filter(([id]) => state.villageById.has(String(id)))
+            );
 
             if (!state.villages.length) {
                 throw new Error("Aucun village n'a pu être analysé dans l'aperçu de production.");
