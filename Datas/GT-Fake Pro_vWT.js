@@ -1,6 +1,6 @@
 /*
  * Webi-Time - GT Fake Intelligent
- * Version : 1.23.0
+ * Version : 1.26.0
  * Auteur  : NoLife4Ever / Webi-Time
  *
  * Principes repris et ameliores a partir de plusieurs scripts de fake GT :
@@ -18,7 +18,7 @@
 
     const SCRIPT = Object.freeze({
         name: 'GT Fake Intelligent',
-        version: '1.23.0',
+        version: '1.26.0',
         prefix: 'wtfi'
     });
 
@@ -129,7 +129,11 @@
             unitSpeed: 1
         },
         units: {},
-        panelOpen: false
+        panelOpen: false,
+        outgoingAttackCounts: new Map(),
+        outgoingAttackCountsLoaded: false,
+        outgoingAttackCountsAt: 0,
+        outgoingAttackCountsPromise: null
     };
 
     function loadSettings() {
@@ -979,6 +983,99 @@
         renderAttackPlaylist(settings);
     }
 
+    function getOutgoingCommandsBaseUrl() {
+        try {
+            if (window.TribalWars && typeof TribalWars.buildURL === 'function') {
+                return TribalWars.buildURL('GET', 'overview_villages', { mode: 'commands', type: 'attack' });
+            }
+        } catch (_) {}
+        return game_data.link_base_pure + 'overview_villages&mode=commands&type=attack';
+    }
+
+    function withPageParameter(url, page) {
+        const parsed = new URL(url, window.location.origin);
+        parsed.searchParams.set('page', String(page));
+        return parsed.href;
+    }
+
+    function getCommandsMaxPage($html) {
+        let maxPage = 0;
+        const inspect = value => {
+            const raw = String(value || '');
+            let match = raw.match(/[?&]page=(\d+)/);
+            if (!match && /^\d+$/.test(raw.trim())) match = [raw, raw.trim()];
+            if (match) maxPage = Math.max(maxPage, Number(match[1]) || 0);
+        };
+        $html.find('a.paged-nav-item[href*="page="], option').each(function () {
+            inspect($(this).attr('href'));
+            inspect($(this).val());
+        });
+        return maxPage;
+    }
+
+    function addOutgoingCommandRowsToCounts($html, counts) {
+        const $rows = $html.find('#commands_table').find('tr.row_a, tr.row_ax, tr.row_b, tr.row_bx');
+        $rows.each(function () {
+            const $row = $(this);
+            let coord = parseCoordinates($row.find('.quickedit-label').first().text())[0];
+            if (!coord) {
+                // Secours pour certaines variantes de l'aperçu : le premier lien village du libellé
+                // correspond à la cible sur l'écran des commandes sortantes.
+                coord = parseCoordinates($row.find('a[href*="screen=info_village"]').first().text())[0];
+            }
+            if (!coord) return;
+            counts.set(coord, (counts.get(coord) || 0) + 1);
+        });
+        return $rows.length;
+    }
+
+    async function refreshOutgoingAttackCounts(force = false) {
+        const maxAge = 15000;
+        if (!force && state.outgoingAttackCountsLoaded && Date.now() - state.outgoingAttackCountsAt < maxAge) {
+            return state.outgoingAttackCounts;
+        }
+        if (state.outgoingAttackCountsPromise) return state.outgoingAttackCountsPromise;
+
+        state.outgoingAttackCountsPromise = (async () => {
+            const counts = new Map();
+            const baseUrl = getOutgoingCommandsBaseUrl();
+            const firstHtml = await $.get(withPageParameter(baseUrl, -1));
+            const $first = $(firstHtml);
+            const firstRows = addOutgoingCommandRowsToCounts($first, counts);
+
+            // page=-1 renvoie jusqu'à 1000 commandes. S'il y en a davantage,
+            // on poursuit uniquement à partir de la première page non déjà incluse.
+            if (firstRows >= 1000) {
+                const pageSize = Math.max(1, parseInt($first.find('input[name="page_size"]').first().val(), 10) || 100);
+                const maxPage = getCommandsMaxPage($first);
+                let page = Math.floor(firstRows / pageSize);
+                while (page <= maxPage && page < 250) {
+                    const html = await $.get(withPageParameter(baseUrl, page));
+                    addOutgoingCommandRowsToCounts($(html), counts);
+                    page++;
+                }
+            }
+
+            state.outgoingAttackCounts = counts;
+            state.outgoingAttackCountsLoaded = true;
+            state.outgoingAttackCountsAt = Date.now();
+            return counts;
+        })().catch(error => {
+            console.warn(`[${SCRIPT.name}] Impossible de lire les attaques sortantes`, error);
+            state.outgoingAttackCountsLoaded = false;
+            return state.outgoingAttackCounts;
+        }).finally(() => {
+            state.outgoingAttackCountsPromise = null;
+        });
+
+        return state.outgoingAttackCountsPromise;
+    }
+
+    function getRealAttackCount(coord) {
+        if (!state.outgoingAttackCountsLoaded) return null;
+        return Number(state.outgoingAttackCounts.get(String(coord || '')) || 0);
+    }
+
     function renderAttackPlaylist(settingsOverride) {
         const $list = $('#' + SCRIPT.prefix + 'Playlist');
         const $status = $('#' + SCRIPT.prefix + 'PlaylistStatus');
@@ -1018,44 +1115,56 @@
                 current: coord === currentTarget,
                 next: coord === nextTarget,
                 night,
-                sentCount: countSentToTarget(coord)
+                sentCount: countSentToTarget(coord),
+                attackCount: getRealAttackCount(coord)
             });
         }
 
         if (!items.length) {
             const totalSent = countTotalSent();
             $status.text(`Aucune attaque en attente${totalSent ? ` • ${formatNumber(totalSent)} fake${totalSent > 1 ? 's' : ''} envoyé${totalSent > 1 ? 's' : ''}` : ''}.`);
-            return;
+        } else {
+            const totalSent = countTotalSent();
+            $status.text(`${formatNumber(items.length)} attaque${items.length > 1 ? 's' : ''} en attente • ${formatNumber(totalSent)} fake${totalSent > 1 ? 's' : ''} envoyé${totalSent > 1 ? 's' : ''}`);
+            items.slice(0, 100).forEach((item, index) => {
+                const player = state.world.playerById.get(item.village.playerId);
+                const tribe = player ? state.world.tribeById.get(player.tribeId) : null;
+                const who = player ? player.name : 'Barbare';
+                const tag = tribe ? ` [${tribe.tag}]` : '';
+                const flags = [];
+                if (item.current) flags.push('EN COURS');
+                if (item.next) flags.push('SUIVANT');
+                if (item.night && !item.current) flags.push('NUIT');
+                const subParts = [who + tag, ...flags];
+                const realFakeCount = item.attackCount;
+                const fakeText = realFakeCount === null
+                    ? '… fake'
+                    : `${formatNumber(realFakeCount)} fake${realFakeCount > 1 ? 's' : ''}`;
+                $list.append(`
+                    <div class="wt-card ${SCRIPT.prefix}-playlist-item ${item.current ? SCRIPT.prefix + '-playlist-current' : ''}">
+                        <span class="${SCRIPT.prefix}-playlist-index">${index + 1}.</span>
+                        <span class="${SCRIPT.prefix}-playlist-main">
+                            <span class="${SCRIPT.prefix}-playlist-title">${escapeHtml(item.coord)} - ${escapeHtml(item.village.name || '')}</span>
+                            <span class="${SCRIPT.prefix}-playlist-sub">${escapeHtml(subParts.join(' • '))}</span>
+                        </span>
+                        <span class="${SCRIPT.prefix}-playlist-meta">${formatNumber(item.village.points)} pts<br>${escapeHtml(fakeText)}</span>
+                        <button type="button" class="wt-btn wt-btn-secondary ${SCRIPT.prefix}-playlist-next ${item.next ? SCRIPT.prefix + '-playlist-next-active' : ''}" data-coord="${escapeHtml(item.coord)}" title="Définir comme prochain village" ${item.current ? 'disabled' : ''}>Suivant</button>
+                        <button type="button" class="wt-btn wt-btn-secondary ${SCRIPT.prefix}-playlist-remove" data-coord="${escapeHtml(item.coord)}" title="Supprimer cette cible">×</button>
+                    </div>
+                `);
+            });
+            if (items.length > 100) {
+                $list.append(`<div class="wt-small">… ${formatNumber(items.length - 100)} cible(s) supplémentaire(s)</div>`);
+            }
         }
 
-        const totalSent = countTotalSent();
-        $status.text(`${formatNumber(items.length)} attaque${items.length > 1 ? 's' : ''} en attente • ${formatNumber(totalSent)} fake${totalSent > 1 ? 's' : ''} envoyé${totalSent > 1 ? 's' : ''}`);
-        items.slice(0, 100).forEach((item, index) => {
-            const player = state.world.playerById.get(item.village.playerId);
-            const tribe = player ? state.world.tribeById.get(player.tribeId) : null;
-            const who = player ? player.name : 'Barbare';
-            const tag = tribe ? ` [${tribe.tag}]` : '';
-            const flags = [];
-            if (item.current) flags.push('EN COURS');
-            if (item.next) flags.push('SUIVANT');
-            if (item.night && !item.current) flags.push('NUIT');
-            const flagText = flags.length ? ` • ${flags.join(' • ')}` : '';
-            const fakeText = `${item.sentCount} fake${item.sentCount > 1 ? 's' : ''}`;
-            $list.append(`
-                <div class="wt-card ${SCRIPT.prefix}-playlist-item ${item.current ? SCRIPT.prefix + '-playlist-current' : ''}">
-                    <span class="${SCRIPT.prefix}-playlist-index">${index + 1}.</span>
-                    <span class="${SCRIPT.prefix}-playlist-main">
-                        <span class="${SCRIPT.prefix}-playlist-title">${escapeHtml(item.coord)} — ${escapeHtml(item.village.name || '')}</span>
-                        <span class="${SCRIPT.prefix}-playlist-sub">${escapeHtml(who + tag + flagText)}</span>
-                    </span>
-                    <span class="${SCRIPT.prefix}-playlist-meta">${formatNumber(item.village.points)} pts<br>${escapeHtml(fakeText)}</span>
-                    <button type="button" class="wt-btn wt-btn-secondary ${SCRIPT.prefix}-playlist-next ${item.next ? SCRIPT.prefix + '-playlist-next-active' : ''}" data-coord="${escapeHtml(item.coord)}" title="Définir comme prochain village" ${item.current ? 'disabled' : ''}>Suivant</button>
-                    <button type="button" class="wt-btn wt-btn-secondary ${SCRIPT.prefix}-playlist-remove" data-coord="${escapeHtml(item.coord)}" title="Supprimer cette cible">×</button>
-                </div>
-            `);
-        });
-        if (items.length > 100) {
-            $list.append(`<div class="wt-small">… ${formatNumber(items.length - 100)} cible(s) supplémentaire(s)</div>`);
+        // Le compteur affiche à droite le nombre réel d'attaques sortantes vers chaque cible.
+        // Il est rafraîchi en arrière-plan et ne bloque pas l'ouverture de l'interface.
+        const countsAreFresh = state.outgoingAttackCountsLoaded && Date.now() - state.outgoingAttackCountsAt < 15000;
+        if (!countsAreFresh && !state.outgoingAttackCountsPromise) {
+            refreshOutgoingAttackCounts().then(() => {
+                if ($('#' + SCRIPT.prefix + 'Playlist').length) renderAttackPlaylist(settings);
+            });
         }
     }
 
