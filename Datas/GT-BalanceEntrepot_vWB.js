@@ -24,7 +24,7 @@
 
     const SCRIPT = Object.freeze({
         name: 'GT Balance Entrepôt',
-        version: '1.1.3',
+        version: '1.1.4',
         prefix: 'wtwb'
     });
 
@@ -1388,6 +1388,7 @@
         if (!state.villages.length || !state.targets.size) return '';
 
         const rows = state.villages.map(v => {
+            const current = projectedResources(v);
             const target = state.targets.get(v.id) || { wood: 0, stone: 0, iron: 0 };
             const final = getFinalEstimate(v.id) || { wood: 0, stone: 0, iron: 0, merchantsLeft: 0 };
             const type = classifyVillage(v);
@@ -1402,6 +1403,7 @@
                     <td class="${SCRIPT.prefix}-village">${escapeHtml(v.name)}</td>
                     <td>${typeLabel}</td>
                     <td>${fmt(v.points)}</td>
+                    <td class="${SCRIPT.prefix}-res" title="Ressources actuelles prises en compte${state.settings.includeIncoming ? ' (entrants inclus)' : ''}"><span class="icon header wood"></span>${fmt(current.wood)} / <span class="icon header stone"></span>${fmt(current.stone)} / <span class="icon header iron"></span>${fmt(current.iron)}</td>
                     <td class="${SCRIPT.prefix}-res"><span class="icon header wood"></span>${fmt(target.wood)} / <span class="icon header stone"></span>${fmt(target.stone)} / <span class="icon header iron"></span>${fmt(target.iron)}</td>
                     <td class="${SCRIPT.prefix}-res"><span class="icon header wood"></span>${fmt(final.wood)} / <span class="icon header stone"></span>${fmt(final.stone)} / <span class="icon header iron"></span>${fmt(final.iron)}</td>
                     <td>${Math.max(0, Math.floor(final.merchantsLeft))}/${v.totalMerchants}</td>
@@ -1417,7 +1419,7 @@
                     <div class="${SCRIPT.prefix}-table-wrap">
                         <table class="${SCRIPT.prefix}-table">
                             <thead>
-                                <tr><th>Village</th><th>Statut</th><th>Points</th><th>Cible <span class="icon header wood"></span>/<span class="icon header stone"></span>/<span class="icon header iron"></span></th><th>Après plan <span class="icon header wood"></span>/<span class="icon header stone"></span>/<span class="icon header iron"></span></th><th>Marchands</th><th>Entrepôt</th></tr>
+                                <tr><th>Village</th><th>Statut</th><th>Points</th><th title="Ressources prises en compte avant le plan${state.settings.includeIncoming ? ' (entrants inclus)' : ''}">Actuel <span class="icon header wood"></span>/<span class="icon header stone"></span>/<span class="icon header iron"></span></th><th>Cible <span class="icon header wood"></span>/<span class="icon header stone"></span>/<span class="icon header iron"></span></th><th>Après plan <span class="icon header wood"></span>/<span class="icon header stone"></span>/<span class="icon header iron"></span></th><th>Marchands</th><th>Entrepôt</th></tr>
                             </thead>
                             <tbody>${rows}</tbody>
                         </table>
