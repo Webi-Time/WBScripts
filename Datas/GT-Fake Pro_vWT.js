@@ -1,6 +1,6 @@
 /*
  * Webi-Time - GT Fake Intelligent
- * Version : 1.22.0
+ * Version : 1.23.0
  * Auteur  : NoLife4Ever / Webi-Time
  *
  * Principes repris et ameliores a partir de plusieurs scripts de fake GT :
@@ -18,7 +18,7 @@
 
     const SCRIPT = Object.freeze({
         name: 'GT Fake Intelligent',
-        version: '1.22.0',
+        version: '1.23.0',
         prefix: 'wtfi'
     });
 
@@ -610,14 +610,18 @@
         });
 
         $('#' + SCRIPT.prefix + 'DeleteData').on('click', () => {
-            if (!window.confirm('Supprimer les paramètres sauvegardés et l\'historique de fake de cette session ?')) return;
+            if (!window.confirm(
+                'Supprimer les cibles et paramètres sauvegardés ?\n\n' +
+                'L\'historique des fakes déjà envoyés sera conservé.'
+            )) return;
             localStorage.removeItem(STORAGE_KEY);
-            sessionStorage.removeItem(HISTORY_KEY);
+            // Ne pas effacer HISTORY_KEY : le compteur et la progression globale doivent survivre.
             sessionStorage.removeItem(PENDING_KEY);
             sessionStorage.removeItem(SWITCH_HISTORY_KEY);
+            sessionStorage.removeItem(NEXT_TARGET_KEY);
             state.settings = normalizeSettings({});
             renderAll();
-            notify('Success', 'Données du Fake Intelligent supprimées.');
+            notify('Success', `Données supprimées • ${formatNumber(countTotalSent())} fake${countTotalSent() > 1 ? 's' : ''} envoyé${countTotalSent() > 1 ? 's' : ''} conservé${countTotalSent() > 1 ? 's' : ''}.`);
         });
 
         $('#' + SCRIPT.prefix + 'Save').on('click', () => {
@@ -992,25 +996,35 @@
         const nextTarget = getNextTarget(sourceCoord);
         const playerId = Number(game_data.player && game_data.player.id);
         const items = [];
+        const available = getAvailableTroops();
+        const playlistPlan = buildPlanForTarget(settings, null, available);
+        const playlistSlowest = playlistPlan.ok ? slowestUnitInPlan(playlistPlan.plan) : null;
+        const playlistNow = getServerDateTime();
 
         for (const coord of buildTargetCoordinates(settings)) {
             if (coord === sourceCoord) continue;
             const village = state.world.villageByCoord.get(coord);
             if (!village) continue;
             if (Number(village.playerId) === playerId) continue;
-            if (sourceCoord && hasBeenSent(sourceCoord, coord)) continue;
+            if (hasBeenSentGlobally(coord)) continue;
+            let night = false;
+            if (sourceCoord && playlistSlowest) {
+                const arrival = new Date(playlistNow.getTime() + travelMilliseconds(sourceCoord, coord, playlistSlowest.unit));
+                night = isNightArrival(arrival, settings);
+            }
             items.push({
                 coord,
                 village,
                 current: coord === currentTarget,
                 next: coord === nextTarget,
+                night,
                 sentCount: countSentToTarget(coord)
             });
         }
 
         if (!items.length) {
             const totalSent = countTotalSent();
-            $status.text(`Aucune attaque en attente pour ce village source${totalSent ? ` • ${formatNumber(totalSent)} fake${totalSent > 1 ? 's' : ''} envoyé${totalSent > 1 ? 's' : ''}` : ''}.`);
+            $status.text(`Aucune attaque en attente${totalSent ? ` • ${formatNumber(totalSent)} fake${totalSent > 1 ? 's' : ''} envoyé${totalSent > 1 ? 's' : ''}` : ''}.`);
             return;
         }
 
@@ -1024,6 +1038,7 @@
             const flags = [];
             if (item.current) flags.push('EN COURS');
             if (item.next) flags.push('SUIVANT');
+            if (item.night && !item.current) flags.push('NUIT');
             const flagText = flags.length ? ` • ${flags.join(' • ')}` : '';
             const fakeText = `${item.sentCount} fake${item.sentCount > 1 ? 's' : ''}`;
             $list.append(`
@@ -1244,12 +1259,25 @@
         notify('Success', `Cible ${target} supprimée de la playlist.`);
     }
 
+    // Le choix "Suivant" appartient à la playlist globale et non au village source.
+    // Cela permet de conserver la prochaine cible lors d'un changement automatique de village.
     function getNextTarget(sourceCoord) {
         try {
             const raw = JSON.parse(sessionStorage.getItem(NEXT_TARGET_KEY) || '{}');
             if (!raw || typeof raw !== 'object') return null;
-            const value = raw[String(sourceCoord || '')];
-            return parseCoordinates(value)[0] || null;
+
+            // Format v1.23+
+            const direct = parseCoordinates(raw.target)[0];
+            if (direct) return direct;
+
+            // Migration transparente du format v1.22 : { "sourceCoord": "targetCoord" }.
+            const sourceValue = parseCoordinates(raw[String(sourceCoord || '')])[0];
+            if (sourceValue) return sourceValue;
+            for (const value of Object.values(raw)) {
+                const migrated = parseCoordinates(value)[0];
+                if (migrated) return migrated;
+            }
+            return null;
         } catch (_) {
             return null;
         }
@@ -1257,32 +1285,14 @@
 
     function setNextTarget(coord) {
         const target = parseCoordinates(coord)[0];
-        const sourceCoord = game_data.village && game_data.village.coord ? game_data.village.coord : '';
-        if (!target || !sourceCoord) return;
-        try {
-            const raw = JSON.parse(sessionStorage.getItem(NEXT_TARGET_KEY) || '{}');
-            const data = raw && typeof raw === 'object' ? raw : {};
-            data[sourceCoord] = target;
-            sessionStorage.setItem(NEXT_TARGET_KEY, JSON.stringify(data));
-        } catch (_) {
-            sessionStorage.setItem(NEXT_TARGET_KEY, JSON.stringify({ [sourceCoord]: target }));
-        }
+        if (!target) return;
+        sessionStorage.setItem(NEXT_TARGET_KEY, JSON.stringify({ target }));
         renderAttackPlaylist();
-        notify('Success', `${target} sera le prochain village préparé.`);
+        notify('Success', `${target} sera le prochain village préparé, même après un changement de village source.`);
     }
 
     function clearNextTarget(sourceCoord) {
-        const source = String(sourceCoord || '');
-        if (!source) return;
-        try {
-            const raw = JSON.parse(sessionStorage.getItem(NEXT_TARGET_KEY) || '{}');
-            if (!raw || typeof raw !== 'object') return;
-            delete raw[source];
-            if (Object.keys(raw).length) sessionStorage.setItem(NEXT_TARGET_KEY, JSON.stringify(raw));
-            else sessionStorage.removeItem(NEXT_TARGET_KEY);
-        } catch (_) {
-            sessionStorage.removeItem(NEXT_TARGET_KEY);
-        }
+        sessionStorage.removeItem(NEXT_TARGET_KEY);
     }
 
     function normalizeSearch(value) {
@@ -2080,6 +2090,13 @@
         return Array.isArray(history[sourceCoord]) && history[sourceCoord].includes(targetCoord);
     }
 
+    function hasBeenSentGlobally(targetCoord) {
+        const target = String(targetCoord || '');
+        if (!target) return false;
+        const history = getHistory();
+        return Object.values(history).some(list => Array.isArray(list) && list.includes(target));
+    }
+
     function markAsSent(sourceCoord, targetCoord) {
         const history = getHistory();
         const list = Array.isArray(history[sourceCoord]) ? history[sourceCoord] : [];
@@ -2422,7 +2439,7 @@
                 diagnostics.self++;
                 continue;
             }
-            if (hasBeenSent(sourceCoord, coord)) {
+            if (hasBeenSentGlobally(coord)) {
                 diagnostics.sent++;
                 continue;
             }
@@ -2469,7 +2486,7 @@
         }
 
         const details = [
-            diagnostics.sent ? `${diagnostics.sent} déjà utilisée(s)` : '',
+            diagnostics.sent ? `${diagnostics.sent} déjà attaquée(s)` : '',
             diagnostics.night ? `${diagnostics.night} arrivée(s) de nuit` : '',
             diagnostics.troops ? `${diagnostics.troops} impossible(s) avec les troupes disponibles` : '',
             diagnostics.unknown ? `${diagnostics.unknown} coordonnée(s) inconnue(s)` : '',
