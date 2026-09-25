@@ -1,6 +1,6 @@
 /*
  * Webi-Time - GT Balance Entrepot
- * Version : 1.1.3
+ * Version : 1.1.5
  * Auteur  : NoLife4Ever / Webi-Time
  *
  * Base fonctionnelle inspiree du "Warehouse balancer" de Sophie "Shinko to Kuma".
@@ -24,7 +24,7 @@
 
     const SCRIPT = Object.freeze({
         name: 'GT Balance Entrepôt',
-        version: '1.1.4',
+        version: '1.1.5',
         prefix: 'wtwb'
     });
 
@@ -1314,6 +1314,16 @@
         const premiumTotal = state.premiumLinks.reduce((sum, l) =>
             sum + (l.wood || 0) + (l.stone || 0) + (l.iron || 0), 0);
 
+        const includeIncoming = !!state.settings.includeIncoming;
+        const projectedTotals = {
+            wood: s.totals.wood + (includeIncoming ? s.incomingTotals.wood : 0),
+            stone: s.totals.stone + (includeIncoming ? s.incomingTotals.stone : 0),
+            iron: s.totals.iron + (includeIncoming ? s.incomingTotals.iron : 0)
+        };
+        const totalLabel = includeIncoming
+            ? 'Total projeté (entrants inclus)'
+            : 'Total projeté (entrants exclus)';
+
         return `
             <div class="${SCRIPT.prefix}-stats">
                 <div class="${SCRIPT.prefix}-stat"><strong>${s.villages}</strong><span>villages</span></div>
@@ -1323,10 +1333,10 @@
                 <div class="${SCRIPT.prefix}-stat"><strong>${state.links.length}</strong><span>transports proposés</span></div>
             </div>
             <div class="${SCRIPT.prefix}-notice">
-                Total projeté (entrants inclus) :
-                <span class="icon header wood"></span>${fmt(s.totals.wood + s.incomingTotals.wood)} ·
-                <span class="icon header stone"></span>${fmt(s.totals.stone + s.incomingTotals.stone)} ·
-                <span class="icon header iron"></span>${fmt(s.totals.iron + s.incomingTotals.iron)}
+                ${totalLabel} :
+                <span class="icon header wood"></span>${fmt(projectedTotals.wood)} ·
+                <span class="icon header stone"></span>${fmt(projectedTotals.stone)} ·
+                <span class="icon header iron"></span>${fmt(projectedTotals.iron)}
                 ${collector ? `<br>Collecteur Premium : <span class="${SCRIPT.prefix}-collector-info">${escapeHtml(collector.name)}</span>
                 — ${fmt(premiumTotal)} ressources à rapatrier.` : ''}
             </div>
