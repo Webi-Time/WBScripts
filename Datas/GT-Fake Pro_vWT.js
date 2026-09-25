@@ -1,6 +1,6 @@
 /*
  * Webi-Time - GT Fake Intelligent
- * Version : 1.18.0
+ * Version : 1.22.0
  * Auteur  : NoLife4Ever / Webi-Time
  *
  * Principes repris et ameliores a partir de plusieurs scripts de fake GT :
@@ -18,7 +18,7 @@
 
     const SCRIPT = Object.freeze({
         name: 'GT Fake Intelligent',
-        version: '1.18.0',
+        version: '1.22.0',
         prefix: 'wtfi'
     });
 
@@ -26,6 +26,7 @@
     const HISTORY_KEY = 'webitime.gt.fakeIntelligent.history.v1';
     const PENDING_KEY = 'webitime.gt.fakeIntelligent.pending.v1';
     const SWITCH_HISTORY_KEY = 'webitime.gt.fakeIntelligent.switchHistory.v1';
+    const NEXT_TARGET_KEY = 'webitime.gt.fakeIntelligent.nextTarget.v1';
     const COMMON_URL = 'https://webi-time.github.io/WBScripts/Datas/WebiTime_GT_Common.js';
     const COMMON_FALLBACK_URL = 'https://cdn.jsdelivr.net/gh/Webi-Time/WBScripts@GT/Datas/WebiTime_GT_Common.js';
 
@@ -236,7 +237,6 @@
                 font-size: 18px !important;
             }
             #${SCRIPT.prefix}PanelWrap {
-                color-scheme: dark;
                 position: fixed;
                 top: 58px;
                 left: 12px;
@@ -295,28 +295,6 @@
             .${SCRIPT.prefix}-target-search-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px; }
             .${SCRIPT.prefix}-night-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; align-items:center; }
             .${SCRIPT.prefix}-night-times { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
-            .${SCRIPT.prefix}-time-input {
-                color-scheme:dark;
-                background:var(--wt-card-2,#2c2c2c) !important;
-                color:var(--wt-text,#e6e6e6) !important;
-                -webkit-appearance:auto;
-                appearance:auto;
-            }
-            .${SCRIPT.prefix}-time-input::-webkit-datetime-edit,
-            .${SCRIPT.prefix}-time-input::-webkit-datetime-edit-fields-wrapper,
-            .${SCRIPT.prefix}-time-input::-webkit-datetime-edit-hour-field,
-            .${SCRIPT.prefix}-time-input::-webkit-datetime-edit-minute-field,
-            .${SCRIPT.prefix}-time-input::-webkit-datetime-edit-second-field,
-            .${SCRIPT.prefix}-time-input::-webkit-datetime-edit-ampm-field,
-            .${SCRIPT.prefix}-time-input::-webkit-datetime-edit-text {
-                background:transparent !important;
-                color:inherit !important;
-            }
-            .${SCRIPT.prefix}-time-input::-webkit-calendar-picker-indicator {
-                background-color:transparent !important;
-                opacity:.85;
-                cursor:pointer;
-            }
             .${SCRIPT.prefix}-label-line { display:flex; align-items:center; gap:6px; }
             .${SCRIPT.prefix}-help-btn { width:20px !important; height:20px !important; min-height:20px !important; padding:0 !important; border-radius:50% !important; font-weight:800 !important; line-height:18px !important; }
             .${SCRIPT.prefix}-help { margin-top:6px; padding:7px 8px; border-left:2px solid var(--wt-orange,#ff9800); }
@@ -348,8 +326,12 @@
             .${SCRIPT.prefix}-bottom-actions { margin-top:10px; padding-top:10px; border-top:1px solid var(--wt-border,#444); }
             .${SCRIPT.prefix}-actions { display:grid; grid-template-columns:repeat(3,1fr); gap:7px; margin-top:9px; }
             .${SCRIPT.prefix}-playlist { display:grid; gap:5px; margin-top:7px; max-height:230px; overflow:auto; }
-            .${SCRIPT.prefix}-playlist-item { display:grid; grid-template-columns:auto minmax(0,1fr) auto auto; gap:8px; align-items:center; padding:6px 8px !important; }
-            .${SCRIPT.prefix}-playlist-remove { width:24px !important; min-width:24px !important; height:24px !important; min-height:24px !important; padding:0 !important; color:#ff6b6b !important; font-weight:900 !important; }
+            .${SCRIPT.prefix}-playlist-item { display:grid; grid-template-columns:auto minmax(0,1fr) auto auto auto; gap:6px; align-items:center; padding:6px 8px !important; }
+            .${SCRIPT.prefix}-playlist-next, .${SCRIPT.prefix}-playlist-remove { height:24px !important; min-height:24px !important; padding:0 !important; font-weight:900 !important; }
+            .${SCRIPT.prefix}-playlist-next { width:52px !important; min-width:52px !important; color:var(--wt-orange-soft,#ffb347) !important; font-size:9px !important; }
+            .${SCRIPT.prefix}-playlist-remove { width:24px !important; min-width:24px !important; }
+            .${SCRIPT.prefix}-playlist-next-active { color:#7fd67f !important; border-color:#4f9f4f !important; }
+            .${SCRIPT.prefix}-playlist-remove { color:#ff6b6b !important; }
             .${SCRIPT.prefix}-playlist-index { min-width:22px; text-align:right; color:var(--wt-orange-soft,#ffb347); font-weight:800; }
             .${SCRIPT.prefix}-playlist-main { min-width:0; }
             .${SCRIPT.prefix}-playlist-title { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:700; }
@@ -586,18 +568,10 @@
         $('#' + SCRIPT.prefix + 'ModeHelpBtn').on('click', () => {
             $('#' + SCRIPT.prefix + 'ModeHelp').toggleClass(SCRIPT.prefix + '-hidden');
         });
-        // Ouvre le sélecteur sur toute la zone de l'heure, une seule fois par interaction.
-        // Le précédent branchement click + focus pouvait déclencher deux ouvertures successives.
-        $('.' + SCRIPT.prefix + '-time-input').on('pointerdown', function (event) {
-            if (event.pointerType === 'mouse' && event.button !== 0) return;
-            if (typeof this.showPicker !== 'function') return; // comportement natif du navigateur
-            event.preventDefault();
-            try {
-                this.focus({ preventScroll: true });
-                this.showPicker();
-            } catch (_) {
-                // Si le navigateur refuse showPicker(), on garde simplement le focus sur le champ.
-                try { this.focus(); } catch (_) {}
+        // Sélecteur horaire natif Chrome : comportement historique (pré-v1.10).
+        $('.' + SCRIPT.prefix + '-time-input').on('click focus', function () {
+            if (typeof this.showPicker === 'function') {
+                try { this.showPicker(); } catch (_) {}
             }
         });
 
@@ -684,6 +658,12 @@
             event.preventDefault();
             event.stopPropagation();
             removeTargetFromPlaylist(String($(this).data('coord') || ''));
+        });
+
+        $('#' + SCRIPT.prefix + 'Playlist').on('click', '.' + SCRIPT.prefix + '-playlist-next', function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            setNextTarget(String($(this).data('coord') || ''));
         });
     }
 
@@ -1009,6 +989,7 @@
         const settings = settingsOverride || ($('#' + SCRIPT.prefix + 'PanelWrap').length ? collectSettingsFromUI() : state.settings);
         const sourceCoord = game_data.village && game_data.village.coord ? game_data.village.coord : '';
         const currentTarget = getCurrentRallyTarget();
+        const nextTarget = getNextTarget(sourceCoord);
         const playerId = Number(game_data.player && game_data.player.id);
         const items = [];
 
@@ -1018,29 +999,42 @@
             if (!village) continue;
             if (Number(village.playerId) === playerId) continue;
             if (sourceCoord && hasBeenSent(sourceCoord, coord)) continue;
-            items.push({ coord, village, current: coord === currentTarget });
+            items.push({
+                coord,
+                village,
+                current: coord === currentTarget,
+                next: coord === nextTarget,
+                sentCount: countSentToTarget(coord)
+            });
         }
 
         if (!items.length) {
-            $status.text('Aucune attaque en attente pour ce village source.');
+            const totalSent = countTotalSent();
+            $status.text(`Aucune attaque en attente pour ce village source${totalSent ? ` • ${formatNumber(totalSent)} fake${totalSent > 1 ? 's' : ''} envoyé${totalSent > 1 ? 's' : ''}` : ''}.`);
             return;
         }
 
-        $status.text(`${formatNumber(items.length)} attaque${items.length > 1 ? 's' : ''} en attente`);
+        const totalSent = countTotalSent();
+        $status.text(`${formatNumber(items.length)} attaque${items.length > 1 ? 's' : ''} en attente • ${formatNumber(totalSent)} fake${totalSent > 1 ? 's' : ''} envoyé${totalSent > 1 ? 's' : ''}`);
         items.slice(0, 100).forEach((item, index) => {
             const player = state.world.playerById.get(item.village.playerId);
             const tribe = player ? state.world.tribeById.get(player.tribeId) : null;
             const who = player ? player.name : 'Barbare';
             const tag = tribe ? ` [${tribe.tag}]` : '';
-            const currentText = item.current ? ' • EN COURS' : '';
+            const flags = [];
+            if (item.current) flags.push('EN COURS');
+            if (item.next) flags.push('SUIVANT');
+            const flagText = flags.length ? ` • ${flags.join(' • ')}` : '';
+            const fakeText = `${item.sentCount} fake${item.sentCount > 1 ? 's' : ''}`;
             $list.append(`
                 <div class="wt-card ${SCRIPT.prefix}-playlist-item ${item.current ? SCRIPT.prefix + '-playlist-current' : ''}">
                     <span class="${SCRIPT.prefix}-playlist-index">${index + 1}.</span>
                     <span class="${SCRIPT.prefix}-playlist-main">
                         <span class="${SCRIPT.prefix}-playlist-title">${escapeHtml(item.coord)} — ${escapeHtml(item.village.name || '')}</span>
-                        <span class="${SCRIPT.prefix}-playlist-sub">${escapeHtml(who + tag + currentText)}</span>
+                        <span class="${SCRIPT.prefix}-playlist-sub">${escapeHtml(who + tag + flagText)}</span>
                     </span>
-                    <span class="${SCRIPT.prefix}-playlist-meta">${formatNumber(item.village.points)} pts</span>
+                    <span class="${SCRIPT.prefix}-playlist-meta">${formatNumber(item.village.points)} pts<br>${escapeHtml(fakeText)}</span>
+                    <button type="button" class="wt-btn wt-btn-secondary ${SCRIPT.prefix}-playlist-next ${item.next ? SCRIPT.prefix + '-playlist-next-active' : ''}" data-coord="${escapeHtml(item.coord)}" title="Définir comme prochain village" ${item.current ? 'disabled' : ''}>Suivant</button>
                     <button type="button" class="wt-btn wt-btn-secondary ${SCRIPT.prefix}-playlist-remove" data-coord="${escapeHtml(item.coord)}" title="Supprimer cette cible">×</button>
                 </div>
             `);
@@ -1245,8 +1239,50 @@
         saveSettingsObject(current);
 
         if (getCurrentRallyTarget() === target) clearRallyTarget();
+        if (getNextTarget(game_data.village && game_data.village.coord) === target) clearNextTarget(game_data.village && game_data.village.coord);
         renderAll();
         notify('Success', `Cible ${target} supprimée de la playlist.`);
+    }
+
+    function getNextTarget(sourceCoord) {
+        try {
+            const raw = JSON.parse(sessionStorage.getItem(NEXT_TARGET_KEY) || '{}');
+            if (!raw || typeof raw !== 'object') return null;
+            const value = raw[String(sourceCoord || '')];
+            return parseCoordinates(value)[0] || null;
+        } catch (_) {
+            return null;
+        }
+    }
+
+    function setNextTarget(coord) {
+        const target = parseCoordinates(coord)[0];
+        const sourceCoord = game_data.village && game_data.village.coord ? game_data.village.coord : '';
+        if (!target || !sourceCoord) return;
+        try {
+            const raw = JSON.parse(sessionStorage.getItem(NEXT_TARGET_KEY) || '{}');
+            const data = raw && typeof raw === 'object' ? raw : {};
+            data[sourceCoord] = target;
+            sessionStorage.setItem(NEXT_TARGET_KEY, JSON.stringify(data));
+        } catch (_) {
+            sessionStorage.setItem(NEXT_TARGET_KEY, JSON.stringify({ [sourceCoord]: target }));
+        }
+        renderAttackPlaylist();
+        notify('Success', `${target} sera le prochain village préparé.`);
+    }
+
+    function clearNextTarget(sourceCoord) {
+        const source = String(sourceCoord || '');
+        if (!source) return;
+        try {
+            const raw = JSON.parse(sessionStorage.getItem(NEXT_TARGET_KEY) || '{}');
+            if (!raw || typeof raw !== 'object') return;
+            delete raw[source];
+            if (Object.keys(raw).length) sessionStorage.setItem(NEXT_TARGET_KEY, JSON.stringify(raw));
+            else sessionStorage.removeItem(NEXT_TARGET_KEY);
+        } catch (_) {
+            sessionStorage.removeItem(NEXT_TARGET_KEY);
+        }
     }
 
     function normalizeSearch(value) {
@@ -2052,6 +2088,21 @@
         sessionStorage.setItem(HISTORY_KEY, JSON.stringify(history));
     }
 
+    function countSentToTarget(targetCoord) {
+        const target = String(targetCoord || '');
+        if (!target) return 0;
+        const history = getHistory();
+        return Object.values(history).reduce((total, list) => {
+            if (!Array.isArray(list)) return total;
+            return total + (list.includes(target) ? 1 : 0);
+        }, 0);
+    }
+
+    function countTotalSent() {
+        const history = getHistory();
+        return Object.values(history).reduce((total, list) => total + (Array.isArray(list) ? list.length : 0), 0);
+    }
+
     function shuffle(array) {
         const a = array.slice();
         for (let i = a.length - 1; i > 0; i--) {
@@ -2347,7 +2398,7 @@
             : state.settings;
         saveSettingsObject(settings);
 
-        const targets = buildTargetCoordinates(settings);
+        let targets = buildTargetCoordinates(settings);
         if (!targets.length) {
             notify('Error', 'Aucune cible configurée.');
             openPanel();
@@ -2359,6 +2410,10 @@
         if (tryAutoSwitchVillage(settings, available)) return true;
 
         const sourceCoord = game_data.village.coord;
+        const preferredNext = getNextTarget(sourceCoord);
+        if (preferredNext && targets.includes(preferredNext)) {
+            targets = [preferredNext, ...targets.filter(coord => coord !== preferredNext)];
+        }
         const now = getServerDateTime();
         const diagnostics = { sent: 0, unknown: 0, night: 0, troops: 0, self: 0 };
 
@@ -2402,6 +2457,7 @@
 
             fillTarget(coord);
             fillPlan(planResult.plan);
+            if (preferredNext === coord) clearNextTarget(sourceCoord);
             const player = state.world.playerById.get(village.playerId);
             const playerText = player ? ` • ${player.name}` : '';
             notify(
@@ -2474,6 +2530,7 @@
             sessionStorage.removeItem(HISTORY_KEY);
             sessionStorage.removeItem(PENDING_KEY);
             sessionStorage.removeItem(SWITCH_HISTORY_KEY);
+            sessionStorage.removeItem(NEXT_TARGET_KEY);
             notify('Success', 'Historique des fakes de la session effacé.');
         }
     });
