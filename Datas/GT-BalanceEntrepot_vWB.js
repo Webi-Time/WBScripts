@@ -1,6 +1,6 @@
 /*
  * Webi-Time - GT Balance Entrepot
- * Version : 1.1.5
+ * Version : 1.2.0
  * Auteur  : NoLife4Ever / Webi-Time
  *
  * Base fonctionnelle inspiree du "Warehouse balancer" de Sophie "Shinko to Kuma".
@@ -8,8 +8,8 @@
  * - interface Webi-Time/vWB compacte et integree a la page ;
  * - analyse sans onglets supplementaires ;
  * - prise en compte des ressources deja entrantes ;
- * - priorite aux petits villages ;
- * - reserves reduites sur villages termines ;
+ * - plafond de réception pour les villages prioritaires ;
+ * - réserve minimale d'envoi pour les villages terminés ;
  * - modes Mix / externe / interne / remplissage prioritaire ;
  * - gestion stricte des marchands et des capacites d'entrepot ;
  * - consolidation optionnelle des surplus vers un village pour l'echange Premium ;
@@ -24,7 +24,7 @@
 
     const SCRIPT = Object.freeze({
         name: 'GT Balance Entrepôt',
-        version: '1.1.5',
+        version: '1.2.0',
         prefix: 'wtwb'
     });
 
@@ -58,10 +58,7 @@
         maxDistance: 0,                       // 0 = aucune limite
         premiumConsolidation: false,
         premiumCollectorId: '',               // vide = automatique
-        premiumFillPercentage: 0.95,
-        priorityWeight: 2.5,
-        normalWeight: 1,
-        finishedWeight: 0.35
+        premiumFillPercentage: 0.95
     });
 
     const state = {
@@ -149,9 +146,6 @@
         out.premiumConsolidation = !!out.premiumConsolidation;
         out.premiumCollectorId = String(out.premiumCollectorId || '');
         out.premiumFillPercentage = clampFloat(out.premiumFillPercentage, 0.10, 1, DEFAULT_SETTINGS.premiumFillPercentage);
-        out.priorityWeight = clampFloat(out.priorityWeight, 1, 10, DEFAULT_SETTINGS.priorityWeight);
-        out.normalWeight = clampFloat(out.normalWeight, 0.1, 10, DEFAULT_SETTINGS.normalWeight);
-        out.finishedWeight = clampFloat(out.finishedWeight, 0.05, 10, DEFAULT_SETTINGS.finishedWeight);
         return out;
     }
 
@@ -525,110 +519,93 @@
 
     function classifyVillage(village) {
         const s = state.settings;
-        if (village.points < s.lowPoints) return 'priority';
+        // Le seuil "terminé" prime si les deux plages se chevauchent.
         if (s.highPoints > 0 && village.points >= s.highPoints) return 'finished';
+        if (village.points < s.lowPoints) return 'priority';
         return 'normal';
     }
 
-    function villageWeight(village) {
-        const type = classifyVillage(village);
-        const s = state.settings;
-        if (type === 'priority') {
-            const pointFactor = s.lowPoints > 0
-                ? Math.max(0, Math.min(1, (s.lowPoints - village.points) / s.lowPoints))
-                : 0;
-            return s.priorityWeight * (1 + pointFactor * 0.5);
-        }
-        if (type === 'finished') return s.finishedWeight;
-        return s.normalWeight;
+    function incomingFor(village) {
+        return state.settings.includeIncoming
+            ? (state.incoming[village.id] || { wood: 0, stone: 0, iron: 0 })
+            : { wood: 0, stone: 0, iron: 0 };
     }
 
-    function targetLimit(village) {
-        const type = classifyVillage(village);
-        const s = state.settings;
-
-        if (type === 'priority') {
-            return Math.max(0, village.warehouseCapacity * s.needsMorePercentage);
-        }
-        if (type === 'finished') {
-            return Math.max(0, village.warehouseCapacity * s.builtOutPercentage);
-        }
-
-        // Marge fixe de securite sur les villages standards pour ne jamais
-        // construire un plan qui les colle artificiellement a 100 %.
-        return Math.max(0, village.warehouseCapacity * 0.95);
+    function finishedReserve(village) {
+        if (classifyVillage(village) !== 'finished') return 0;
+        return Math.max(0, village.warehouseCapacity * state.settings.builtOutPercentage);
     }
 
-    function weightedAllocation(total, villages) {
-        const entries = villages.map(v => ({
-            id: v.id,
-            limit: Math.max(0, targetLimit(v)),
-            weight: Math.max(0.01, villageWeight(v)),
-            allocated: 0
-        }));
-
-        let remaining = Math.max(0, total);
-        let active = entries.filter(e => e.limit > 0);
-        let guard = 0;
-
-        while (remaining >= 1 && active.length && guard++ < 1000) {
-            const sumWeight = active.reduce((sum, e) => sum + e.weight, 0);
-            if (sumWeight <= 0) break;
-
-            let spent = 0;
-            const capped = [];
-
-            for (const e of active) {
-                const room = e.limit - e.allocated;
-                if (room <= 0) {
-                    capped.push(e.id);
-                    continue;
-                }
-
-                const ideal = remaining * (e.weight / sumWeight);
-                const add = Math.min(room, ideal);
-                e.allocated += add;
-                spent += add;
-
-                if (room - add < 1) capped.push(e.id);
-            }
-
-            if (spent < 1) break;
-            remaining -= spent;
-            active = active.filter(e => !capped.includes(e.id));
+    function receiveCap(village) {
+        // Le pourcentage "prioritaire" est un plafond de réception, pas une
+        // quantité garantie. Les autres villages peuvent aller jusqu'à la
+        // capacité réelle de leur entrepôt.
+        if (classifyVillage(village) === 'priority') {
+            return Math.max(0, village.warehouseCapacity * state.settings.needsMorePercentage);
         }
+        return Math.max(0, village.warehouseCapacity);
+    }
 
+    function minimumProjectedAmount(village, resource) {
+        // Quantité minimale que le plan peut réellement laisser après envoi.
+        // Les ressources entrantes ne sont pas disponibles pour être renvoyées
+        // avant leur arrivée. Pour un village terminé, on conserve en plus la
+        // réserve configurée sur le stock ACTUEL.
+        const inc = incomingFor(village)[resource] || 0;
+        const current = Number(village[resource]) || 0;
+        const reserve = finishedReserve(village);
+        const currentFloor = reserve > 0 ? Math.min(current, reserve) : 0;
+        return inc + currentFloor;
+    }
+
+    function maxCurrentSendable(village, resource, target) {
+        const inc = incomingFor(village)[resource] || 0;
+        const current = Number(village[resource]) || 0;
+        const reserve = finishedReserve(village);
+        const currentFloor = reserve > 0 ? Math.min(current, reserve) : 0;
+
+        // Pour finir au niveau cible en tenant compte des entrants, il faut
+        // garder au minimum target - entrants sur le stock actuellement présent.
+        const keepForTarget = Math.max(0, (Number(target) || 0) - inc);
+        const keepCurrent = Math.max(currentFloor, keepForTarget);
+        return Math.max(0, current - keepCurrent);
+    }
+
+    function solveEqualLevel(entries, total) {
+        // Cherche le niveau L tel que chaque village termine aussi près que
+        // possible de L, sous la forme clamp(L, minimum, maximum).
+        // C'est un water-filling avec bornes basses/hautes.
+        if (!entries.length) return 0;
+
+        const lowerSum = entries.reduce((sum, e) => sum + e.min, 0);
+        const upperSum = entries.reduce((sum, e) => sum + e.max, 0);
+        const budget = Math.max(lowerSum, Math.min(Number(total) || 0, upperSum));
+
+        let lo = Math.min(...entries.map(e => e.min));
+        let hi = Math.max(...entries.map(e => e.max));
+
+        for (let i = 0; i < 70; i++) {
+            const mid = (lo + hi) / 2;
+            const used = entries.reduce((sum, e) => sum + Math.min(e.max, Math.max(e.min, mid)), 0);
+            if (used <= budget) lo = mid;
+            else hi = mid;
+        }
+        return lo;
+    }
+
+    function buildEqualTargetsForResource(villages, total, resource) {
+        const entries = villages.map(v => {
+            const min = minimumProjectedAmount(v, resource);
+            const max = Math.max(min, receiveCap(v));
+            return { village: v, min, max };
+        });
+
+        const level = solveEqualLevel(entries, total);
         const result = new Map();
-        for (const e of entries) result.set(e.id, round1000(e.allocated));
-        return result;
-    }
-
-    function enforceFinishedReserve(targets, villages) {
-        // La valeur "Entrepôt conservé — terminé" est une réserve minimale
-        // par ressource, pas un simple poids d'allocation.
-        //
-        // Exemple : entrepôt 400 000 + réglage 10 % => cible minimale
-        // 40 000 bois / 40 000 argile / 40 000 fer.
-        //
-        // Les cibles globales peuvent donc dépasser les ressources réellement
-        // disponibles : le plan laissera alors un déficit non satisfait au lieu
-        // d'autoriser un village terminé à descendre sous sa réserve.
-        const resources = ['wood', 'stone', 'iron'];
-
-        for (const village of villages) {
-            if (classifyVillage(village) !== 'finished') continue;
-
-            const reserve = round1000(targetLimit(village));
-            const target = targets.get(village.id) || { wood: 0, stone: 0, iron: 0 };
-
-            for (const resource of resources) {
-                target[resource] = Math.max(Number(target[resource]) || 0, reserve);
-            }
-
-            targets.set(village.id, target);
+        for (const e of entries) {
+            result.set(e.village.id, Math.round(Math.min(e.max, Math.max(e.min, level))));
         }
-
-        return targets;
+        return { level, targets: result };
     }
 
     function computeTargets(villages, totals) {
@@ -640,68 +617,96 @@
             targets.set(v.id, { wood: 0, stone: 0, iron: 0 });
         }
 
-        // MIX : repartition entre les villages + meme quantite B/A/F dans chaque village.
+        // MIX : même niveau recherché pour les trois ressources ET entre les
+        // villages. Le niveau commun est limité par la ressource la plus rare.
+        // Les surplus inconvertibles des ressources plus abondantes restent
+        // disponibles comme surplus (et peuvent ensuite être rapatriés Premium).
         if (s.balanceMode === 'mix') {
-            const balancedPool = Math.min(totals.wood, totals.stone, totals.iron);
-            const allocation = weightedAllocation(balancedPool, villages);
-
-            for (const v of villages) {
-                const amount = allocation.get(v.id) || 0;
-                targets.set(v.id, { wood: amount, stone: amount, iron: amount });
+            const perResource = {};
+            for (const resource of resources) {
+                const entries = villages.map(v => {
+                    const min = minimumProjectedAmount(v, resource);
+                    return { min, max: Math.max(min, receiveCap(v)) };
+                });
+                perResource[resource] = {
+                    entries,
+                    level: solveEqualLevel(entries, totals[resource])
+                };
             }
-            return enforceFinishedReserve(targets, villages);
+
+            const commonLevel = Math.min(...resources.map(r => perResource[r].level));
+
+            for (let i = 0; i < villages.length; i++) {
+                const v = villages[i];
+                const target = targets.get(v.id);
+                for (const resource of resources) {
+                    const e = perResource[resource].entries[i];
+                    target[resource] = Math.round(Math.min(e.max, Math.max(e.min, commonLevel)));
+                }
+            }
+            return targets;
         }
 
-        // EQUILIBRE INTERNE : chaque village conserve approximativement son volume
-        // global de ressources, mais on vise 1/3 bois, 1/3 argile, 1/3 fer.
-        // Les plafonds prioritaire / termine restent appliques.
+        // EQUILIBRE INTERNE : chaque village vise le tiers de son volume total
+        // B+A+F. Il n'y a pas d'objectif d'égalité entre villages.
         if (s.balanceMode === 'internal') {
             for (const v of villages) {
                 const p = projectedResources(v);
                 const localThird = (p.wood + p.stone + p.iron) / 3;
-                const amount = round1000(Math.min(localThird, targetLimit(v)));
-                targets.set(v.id, { wood: amount, stone: amount, iron: amount });
+                const cap = receiveCap(v);
+                const target = targets.get(v.id);
+                for (const resource of resources) {
+                    target[resource] = Math.round(Math.min(cap, Math.max(0, localThird)));
+                }
             }
-            return enforceFinishedReserve(targets, villages);
+            return targets;
         }
 
-        // REMPLISSAGE : les villages prioritaires sont reserves dans l'ordre
-        // croissant des points jusqu'au pourcentage demande. Le reliquat est
-        // ensuite reparti entre les autres villages.
+        // REMPLISSAGE : chaque ressource est affectée en priorité stricte aux
+        // villages prioritaires du plus petit au plus grand jusqu'au plafond
+        // configuré. Les autres villages ne sont pas équilibrés avec le reliquat.
         if (s.balanceMode === 'fill') {
             const priorities = villages
                 .filter(v => classifyVillage(v) === 'priority')
                 .sort((a, b) => a.points - b.points);
-            const others = villages.filter(v => classifyVillage(v) !== 'priority');
 
             for (const resource of resources) {
-                let remaining = Math.max(0, totals[resource]);
+                const lower = new Map();
+                let locked = 0;
+
+                for (const v of villages) {
+                    const min = minimumProjectedAmount(v, resource);
+                    lower.set(v.id, min);
+                    targets.get(v.id)[resource] = Math.round(min);
+                    locked += min;
+                }
+
+                let remaining = Math.max(0, (Number(totals[resource]) || 0) - locked);
 
                 for (const v of priorities) {
-                    const desired = round1000(Math.min(targetLimit(v), remaining));
-                    targets.get(v.id)[resource] = desired;
-                    remaining -= desired;
-                }
-
-                if (remaining > 0 && others.length) {
-                    const allocation = weightedAllocation(remaining, others);
-                    for (const v of others) {
-                        targets.get(v.id)[resource] = allocation.get(v.id) || 0;
-                    }
+                    if (remaining <= 0) break;
+                    const currentTarget = targets.get(v.id)[resource];
+                    const cap = Math.max(currentTarget, receiveCap(v));
+                    const room = Math.max(0, cap - currentTarget);
+                    const add = Math.min(room, remaining);
+                    targets.get(v.id)[resource] = Math.round(currentTarget + add);
+                    remaining -= add;
                 }
             }
-            return enforceFinishedReserve(targets, villages);
+            return targets;
         }
 
-        // EQUILIBRE EXTERNE : chaque ressource est repartie independamment.
+        // EQUILIBRE EXTERNE : chaque ressource est égalisée indépendamment.
+        // On cherche un niveau commun réel, en respectant la réserve d'envoi
+        // des villages terminés et le plafond de réception des prioritaires.
         for (const resource of resources) {
-            const allocation = weightedAllocation(totals[resource], villages);
+            const allocation = buildEqualTargetsForResource(villages, totals[resource]).targets;
             for (const v of villages) {
                 targets.get(v.id)[resource] = allocation.get(v.id) || 0;
             }
         }
 
-        return enforceFinishedReserve(targets, villages);
+        return targets;
     }
 
     function projectedResources(village) {
@@ -762,10 +767,14 @@
 
             for (const r of resources) {
                 node.deficit[r] = round1000(Math.max(0, target[r] - projected[r]));
-                // Un surplus entrant n'est pas forcement disponible maintenant.
+
+                // Le surplus envoyable est limité simultanément par :
+                // 1) la cible finale ;
+                // 2) les ressources réellement présentes maintenant ;
+                // 3) la réserve minimale des villages terminés.
                 node.excess[r] = round1000(Math.min(
                     Math.max(0, projected[r] - target[r]),
-                    node.currentAvailable[r]
+                    maxCurrentSendable(v, r, target[r])
                 ));
             }
             work.set(v.id, node);
@@ -1230,10 +1239,10 @@
     function buildSettingsHtml() {
         const s = state.settings;
         const modeHelp = {
-            mix: 'Équilibre les villages entre eux tout en visant une quantité proche de bois, argile et fer dans chaque village.',
-            external: 'Répartit chaque ressource entre les villages selon les seuils de points et les pourcentages d’entrepôt.',
-            internal: 'Cherche surtout à rapprocher bois, argile et fer au sein de chaque village, sans chercher à uniformiser leur volume global.',
-            fill: 'Remplit les villages prioritaires du plus petit au plus grand jusqu’au pourcentage défini, puis répartit le reliquat.'
+            mix: 'Égalise à la fois les villages entre eux et bois / argile / fer. La ressource la plus rare fixe le niveau commun atteignable.',
+            external: 'Égalise chaque ressource indépendamment entre les villages. Le % prioritaire est un plafond de réception.',
+            internal: 'Égalise bois / argile / fer à l’intérieur de chaque village autour de son volume total actuel, sans uniformiser les villages entre eux.',
+            fill: 'Remplit les villages prioritaires du plus petit au plus grand jusqu’au % défini. Le suivant n’est servi qu’après le précédent.'
         }[s.balanceMode] || '';
 
         return `
@@ -1265,7 +1274,7 @@
                 </div>
             </div>
             <div class="${SCRIPT.prefix}-mode-help">${escapeHtml(modeHelp)}</div>
-            <div class="${SCRIPT.prefix}-mode-help"><b>Village terminé :</b> le pourcentage configuré est une réserve minimale par ressource. Un village déjà sous ce seuil ne donnera pas davantage de cette ressource.</div>
+            <div class="${SCRIPT.prefix}-mode-help"><b>Règles :</b> le % terminé est uniquement une réserve minimale d’envoi par ressource ; le % prioritaire est uniquement un plafond de réception. Aucun des deux ne garantit une quantité cible.</div>
 
             <details class="${SCRIPT.prefix}-advanced">
                 <summary>Options avancées</summary>
@@ -1429,7 +1438,7 @@
                     <div class="${SCRIPT.prefix}-table-wrap">
                         <table class="${SCRIPT.prefix}-table">
                             <thead>
-                                <tr><th>Village</th><th>Statut</th><th>Points</th><th title="Ressources prises en compte avant le plan${state.settings.includeIncoming ? ' (entrants inclus)' : ''}">Actuel <span class="icon header wood"></span>/<span class="icon header stone"></span>/<span class="icon header iron"></span></th><th>Cible <span class="icon header wood"></span>/<span class="icon header stone"></span>/<span class="icon header iron"></span></th><th>Après plan <span class="icon header wood"></span>/<span class="icon header stone"></span>/<span class="icon header iron"></span></th><th>Marchands</th><th>Entrepôt</th></tr>
+                                <tr><th>Village</th><th>Statut</th><th>Points</th><th title="Ressources prises en compte avant le plan${state.settings.includeIncoming ? ' (entrants inclus)' : ''}">Actuel <span class="icon header wood"></span>/<span class="icon header stone"></span>/<span class="icon header iron"></span></th><th title="Objectif calculé par le mode choisi. Le % terminé reste une réserve d’envoi et n’est pas une cible de réception.">Cible <span class="icon header wood"></span>/<span class="icon header stone"></span>/<span class="icon header iron"></span></th><th>Après plan <span class="icon header wood"></span>/<span class="icon header stone"></span>/<span class="icon header iron"></span></th><th>Marchands</th><th>Entrepôt</th></tr>
                             </thead>
                             <tbody>${rows}</tbody>
                         </table>
