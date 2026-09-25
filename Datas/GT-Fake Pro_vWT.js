@@ -1,6 +1,6 @@
 /*
  * Webi-Time - GT Fake Intelligent
- * Version : 1.28.0
+ * Version : 1.29.0
  * Auteur  : NoLife4Ever / Webi-Time
  *
  * Principes repris et ameliores a partir de plusieurs scripts de fake GT :
@@ -18,7 +18,7 @@
 
     const SCRIPT = Object.freeze({
         name: 'GT Fake Intelligent',
-        version: '1.28.0',
+        version: '1.29.0',
         prefix: 'wtfi'
     });
 
@@ -693,10 +693,10 @@
             removeTargetFromPlaylist(String($(this).data('coord') || ''));
         });
 
-        $('#' + SCRIPT.prefix + 'Playlist').on('click', '.' + SCRIPT.prefix + '-playlist-next', function (event) {
+        $('#' + SCRIPT.prefix + 'Playlist').on('click', '.' + SCRIPT.prefix + '-playlist-next', async function (event) {
             event.preventDefault();
             event.stopPropagation();
-            setNextTarget(String($(this).data('coord') || ''));
+            await setNextTarget(String($(this).data('coord') || ''));
         });
     }
 
@@ -1103,6 +1103,17 @@
         return Number(state.outgoingAttackCounts.get(String(coord || '')) || 0);
     }
 
+    // Trie par nombre réel d'attaques sortantes croissant.
+    // En cas d'égalité, l'ordre de la file circulaire est conservé.
+    function sortTargetsByRealAttackCount(targets) {
+        const list = Array.isArray(targets) ? targets.slice() : [];
+        if (!state.outgoingAttackCountsLoaded) return list;
+        return list
+            .map((coord, index) => ({ coord, index, count: getRealAttackCount(coord) ?? 0 }))
+            .sort((a, b) => (a.count - b.count) || (a.index - b.index))
+            .map(item => item.coord);
+    }
+
     function renderAttackPlaylist(settingsOverride) {
         const $list = $('#' + SCRIPT.prefix + 'Playlist');
         const $status = $('#' + SCRIPT.prefix + 'PlaylistStatus');
@@ -1125,7 +1136,8 @@
         const playlistSlowest = playlistPlan.ok ? slowestUnitInPlan(playlistPlan.plan) : null;
         const playlistNow = getServerDateTime();
 
-        for (const coord of getTargetQueue(settings)) {
+        const orderedQueue = sortTargetsByRealAttackCount(getTargetQueue(settings));
+        for (const coord of orderedQueue) {
             if (coord === sourceCoord) continue;
             const village = state.world.villageByCoord.get(coord);
             if (!village) continue;
@@ -1427,12 +1439,77 @@
         }
     }
 
-    function setNextTarget(coord) {
+    async function setNextTarget(coord) {
         const target = parseCoordinates(coord)[0];
-        if (!target) return;
+        if (!target) return false;
+
+        // Le choix reste mémorisé si un changement de village intervient avant l'envoi.
         sessionStorage.setItem(NEXT_TARGET_KEY, JSON.stringify({ target }));
-        renderAttackPlaylist();
-        notify('Success', `${target} sera le prochain village préparé, même après un changement de village source.`);
+
+        // Depuis une autre page, on garde simplement la préférence puis on revient au ralliement.
+        if (game_data.screen !== 'place') {
+            notify('Info', `${target} défini comme prochaine cible. Ouverture du point de ralliement...`);
+            goToRallyPoint();
+            return true;
+        }
+
+        // Ne jamais modifier une commande déjà sur l'écran de confirmation.
+        if ($('#troop_confirm_submit, #command-data-form input[name="confirm"], #command-data-form button[name="confirm"]').filter(':visible').length) {
+            notify('Error', 'Reviens au point de ralliement avant de changer la cible.');
+            renderAttackPlaylist();
+            return false;
+        }
+
+        if (!state.ready) {
+            await loadData();
+            if (!state.ready) return false;
+        }
+
+        const settings = $('#' + SCRIPT.prefix + 'PanelWrap').length
+            ? collectSettingsFromUI()
+            : state.settings;
+        const village = state.world.villageByCoord.get(target);
+        if (!village) {
+            notify('Error', `Village ${target} introuvable dans les données monde.`);
+            return false;
+        }
+        if (Number(village.playerId) === Number(game_data.player.id)) {
+            notify('Error', `Le village ${target} t'appartient.`);
+            return false;
+        }
+
+        const available = getAvailableTroops();
+        const planResult = buildPlanForTarget(settings, village, available);
+        if (!planResult.ok) {
+            notify('Error', `Impossible de préparer ${target} : ${planResult.reason || 'troupes insuffisantes.'}`, 6500);
+            return false;
+        }
+
+        const slowest = slowestUnitInPlan(planResult.plan);
+        if (!slowest) {
+            notify('Error', `Impossible de déterminer l'unité la plus lente pour ${target}.`);
+            return false;
+        }
+
+        const sourceCoord = game_data.village.coord;
+        const arrival = new Date(getServerDateTime().getTime() + travelMilliseconds(sourceCoord, target, slowest.unit));
+        if (isNightArrival(arrival, settings)) {
+            notify('Error', `${target} arriverait en Bonus de nuit (${formatTime(arrival)}). Cible non préparée.`, 6500);
+            renderAttackPlaylist(settings);
+            return false;
+        }
+
+        // Comportement immédiat : même principe qu'Essayer, mais en changeant aussi la cible.
+        fillTarget(target);
+        fillPlan(planResult.plan);
+        clearNextTarget(sourceCoord);
+        renderAttackPlaylist(settings);
+        notify(
+            'Success',
+            `Cible suivante appliquée : ${target} • ${planResult.actualPop}/${planResult.requiredPop || 0} pop • arrivée ${formatTime(arrival)}`,
+            5000
+        );
+        return true;
     }
 
     function clearNextTarget(sourceCoord) {
@@ -2289,6 +2366,14 @@
         history[sourceCoord] = list;
         sessionStorage.setItem(HISTORY_KEY, JSON.stringify(history));
         rotateTargetToEnd(targetCoord, state.settings);
+
+        // La commande vient d'être confirmée : incrément local immédiat pour que le tri
+        // ne réutilise pas la même cible avant le prochain rafraîchissement de l'aperçu.
+        if (state.outgoingAttackCountsLoaded) {
+            const current = Number(state.outgoingAttackCounts.get(String(targetCoord)) || 0);
+            state.outgoingAttackCounts.set(String(targetCoord), current + 1);
+            state.outgoingAttackCountsAt = Date.now();
+        }
     }
 
     function countSentToTarget(targetCoord) {
@@ -2607,6 +2692,11 @@
             openPanel();
             return false;
         }
+
+        // La priorité réelle de la playlist est le nombre d'attaques actuellement en route.
+        // On rafraîchit avant chaque préparation afin de privilégier les villages à 0, puis 1, 2, etc.
+        await refreshOutgoingAttackCounts(false);
+        targets = sortTargetsByRealAttackCount(targets);
 
         const available = getAvailableTroops();
 
