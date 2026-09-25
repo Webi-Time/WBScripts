@@ -1,6 +1,6 @@
 /*
  * Webi-Time - GT Fake Intelligent
- * Version : 1.26.0
+ * Version : 1.28.0
  * Auteur  : NoLife4Ever / Webi-Time
  *
  * Principes repris et ameliores a partir de plusieurs scripts de fake GT :
@@ -8,7 +8,7 @@
  * - recherche Joueur / Tribu depuis les donnees monde ;
  * - evitement d'une plage de bonus de nuit selon l'heure d'arrivee reelle ;
  * - generation automatique des troupes selon population / temps de construction ;
- * - memoire des cibles deja fakees depuis chaque village pendant la session.
+ * - playlist circulaire : chaque cible envoyee repart automatiquement en fin de file.
  *
  * UI : WebiTime_GT_Common.js (theme sombre / accent orange).
  */
@@ -18,7 +18,7 @@
 
     const SCRIPT = Object.freeze({
         name: 'GT Fake Intelligent',
-        version: '1.26.0',
+        version: '1.28.0',
         prefix: 'wtfi'
     });
 
@@ -27,6 +27,7 @@
     const PENDING_KEY = 'webitime.gt.fakeIntelligent.pending.v1';
     const SWITCH_HISTORY_KEY = 'webitime.gt.fakeIntelligent.switchHistory.v1';
     const NEXT_TARGET_KEY = 'webitime.gt.fakeIntelligent.nextTarget.v1';
+    const TARGET_QUEUE_KEY = 'webitime.gt.fakeIntelligent.targetQueue.v1';
     const COMMON_URL = 'https://webi-time.github.io/WBScripts/Datas/WebiTime_GT_Common.js';
     const COMMON_FALLBACK_URL = 'https://cdn.jsdelivr.net/gh/Webi-Time/WBScripts@GT/Datas/WebiTime_GT_Common.js';
 
@@ -93,7 +94,8 @@
         nightEnabled: true,
         nightStart: '00:00',
         nightEnd: '07:00',
-        settingsRevision: 7,
+        settingsRevision: 8,
+        hideNightInPlaylist: false,
         fakeMode: 'auto_balanced',
         autoSwitchVillage: true,
         autoUnits: {},
@@ -155,7 +157,8 @@
         return {
             ...base,
             ...input,
-            settingsRevision: 7,
+            settingsRevision: 8,
+            hideNightInPlaylist: input.hideNightInPlaylist === undefined ? false : !!input.hideNightInPlaylist,
             autoSwitchVillage: migrateAutoSwitch ? true : (input.autoSwitchVillage === undefined ? true : !!input.autoSwitchVillage),
             tribeIds: Array.isArray(input.tribeIds) ? input.tribeIds.map(Number).filter(Number.isFinite) : [],
             playerIds: Array.isArray(input.playerIds) ? input.playerIds.map(Number).filter(Number.isFinite) : [],
@@ -330,6 +333,14 @@
             .${SCRIPT.prefix}-bottom-actions { margin-top:10px; padding-top:10px; border-top:1px solid var(--wt-border,#444); }
             .${SCRIPT.prefix}-actions { display:grid; grid-template-columns:repeat(3,1fr); gap:7px; margin-top:9px; }
             .${SCRIPT.prefix}-playlist { display:grid; gap:5px; margin-top:7px; max-height:230px; overflow:auto; }
+            .${SCRIPT.prefix}-playlist-toolbar { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+            .${SCRIPT.prefix}-playlist-toolbar > .wt-small { min-width:0; flex:1 1 auto; }
+            .${SCRIPT.prefix}-night-toggle { display:inline-flex; align-items:center; gap:6px; flex:0 0 auto; cursor:pointer; user-select:none; font-size:9px; white-space:nowrap; opacity:.9; }
+            .${SCRIPT.prefix}-night-toggle input { position:absolute; opacity:0; pointer-events:none; }
+            .${SCRIPT.prefix}-night-toggle-track { position:relative; display:inline-block; width:34px; height:18px; border:1px solid var(--wt-border,#444); border-radius:999px; background:var(--wt-card-2,#2c2c2c); box-sizing:border-box; transition:.15s ease; }
+            .${SCRIPT.prefix}-night-toggle-knob { position:absolute; top:2px; left:2px; width:12px; height:12px; border-radius:50%; background:#aaa; transition:.15s ease; }
+            .${SCRIPT.prefix}-night-toggle input:checked + .${SCRIPT.prefix}-night-toggle-track { border-color:var(--wt-orange,#ff9800); background:rgba(255,152,0,.18); }
+            .${SCRIPT.prefix}-night-toggle input:checked + .${SCRIPT.prefix}-night-toggle-track .${SCRIPT.prefix}-night-toggle-knob { transform:translateX(16px); background:var(--wt-orange-soft,#ffb347); }
             .${SCRIPT.prefix}-playlist-item { display:grid; grid-template-columns:auto minmax(0,1fr) auto auto auto; gap:6px; align-items:center; padding:6px 8px !important; }
             .${SCRIPT.prefix}-playlist-next, .${SCRIPT.prefix}-playlist-remove { height:24px !important; min-height:24px !important; padding:0 !important; font-weight:900 !important; }
             .${SCRIPT.prefix}-playlist-next { width:52px !important; min-width:52px !important; color:var(--wt-orange-soft,#ffb347) !important; font-size:9px !important; }
@@ -503,7 +514,14 @@
 
                         <details class="wt-card ${SCRIPT.prefix}-section" data-section-key="playlist" open>
                             <summary class="wt-card-title">Playlist d'attaque</summary>
-                            <div id="${SCRIPT.prefix}PlaylistStatus" class="wt-small">Chargement de la playlist...</div>
+                            <div class="${SCRIPT.prefix}-playlist-toolbar">
+                                <div id="${SCRIPT.prefix}PlaylistStatus" class="wt-small">Chargement de la playlist...</div>
+                                <label class="${SCRIPT.prefix}-night-toggle" for="${SCRIPT.prefix}HideNightInPlaylist" title="Masquer ou afficher les villages dont l'arrivée tombe dans le bonus de nuit. Ils restent dans la playlist.">
+                                    <span>Masquer NUIT</span>
+                                    <input id="${SCRIPT.prefix}HideNightInPlaylist" type="checkbox">
+                                    <span class="${SCRIPT.prefix}-night-toggle-track"><span class="${SCRIPT.prefix}-night-toggle-knob"></span></span>
+                                </label>
+                            </div>
                             <div id="${SCRIPT.prefix}Playlist" class="${SCRIPT.prefix}-playlist"></div>
                         </details>
 
@@ -559,6 +577,12 @@
             // pour qu'un nouvel appel / rendu ne le remette pas à AUTO équilibré.
             state.settings.fakeMode = String($(this).val() || 'auto_balanced');
             localStorage.setItem(STORAGE_KEY, JSON.stringify(normalizeSettings(state.settings)));
+        });
+
+        $('#' + SCRIPT.prefix + 'HideNightInPlaylist').on('change', function () {
+            state.settings.hideNightInPlaylist = !!this.checked;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(normalizeSettings(state.settings)));
+            renderAttackPlaylist();
         });
 
         // L'événement natif "toggle" des <details> ne remonte pas : liaison directe.
@@ -623,6 +647,7 @@
             sessionStorage.removeItem(PENDING_KEY);
             sessionStorage.removeItem(SWITCH_HISTORY_KEY);
             sessionStorage.removeItem(NEXT_TARGET_KEY);
+            sessionStorage.removeItem(TARGET_QUEUE_KEY);
             state.settings = normalizeSettings({});
             renderAll();
             notify('Success', `Données supprimées • ${formatNumber(countTotalSent())} fake${countTotalSent() > 1 ? 's' : ''} envoyé${countTotalSent() > 1 ? 's' : ''} conservé${countTotalSent() > 1 ? 's' : ''}.`);
@@ -735,6 +760,7 @@
         $('#' + SCRIPT.prefix + 'NightEnd').val(state.settings.nightEnd || '07:00');
         $('#' + SCRIPT.prefix + 'FakeMode').val(state.settings.fakeMode || 'auto_balanced');
         $('#' + SCRIPT.prefix + 'AutoSwitchVillage').prop('checked', !!state.settings.autoSwitchVillage);
+        $('#' + SCRIPT.prefix + 'HideNightInPlaylist').prop('checked', !!state.settings.hideNightInPlaylist);
         renderSectionState();
 
         getPlayableFakeUnits().forEach(unit => {
@@ -836,7 +862,7 @@
         });
 
         return normalizeSettings({
-            settingsRevision: 7,
+            settingsRevision: 8,
             manualCoords: $('#' + SCRIPT.prefix + 'ManualCoords').val() || '',
             tribeIds: state.settings.tribeIds,
             playerIds: state.settings.playerIds,
@@ -844,6 +870,7 @@
             nightEnabled: $('#' + SCRIPT.prefix + 'NightEnabled').prop('checked'),
             nightStart: $('#' + SCRIPT.prefix + 'NightStart').val() || '00:00',
             nightEnd: $('#' + SCRIPT.prefix + 'NightEnd').val() || '07:00',
+            hideNightInPlaylist: $('#' + SCRIPT.prefix + 'HideNightInPlaylist').prop('checked'),
             fakeMode: $('#' + SCRIPT.prefix + 'FakeMode').val() || 'auto_balanced',
             autoSwitchVillage: $('#' + SCRIPT.prefix + 'AutoSwitchVillage').prop('checked'),
             autoUnits,
@@ -1098,12 +1125,11 @@
         const playlistSlowest = playlistPlan.ok ? slowestUnitInPlan(playlistPlan.plan) : null;
         const playlistNow = getServerDateTime();
 
-        for (const coord of buildTargetCoordinates(settings)) {
+        for (const coord of getTargetQueue(settings)) {
             if (coord === sourceCoord) continue;
             const village = state.world.villageByCoord.get(coord);
             if (!village) continue;
             if (Number(village.playerId) === playerId) continue;
-            if (hasBeenSentGlobally(coord)) continue;
             let night = false;
             if (sourceCoord && playlistSlowest) {
                 const arrival = new Date(playlistNow.getTime() + travelMilliseconds(sourceCoord, coord, playlistSlowest.unit));
@@ -1120,13 +1146,18 @@
             });
         }
 
+        const hideNight = !!settings.hideNightInPlaylist;
+        const hiddenNightCount = hideNight ? items.filter(item => item.night && !item.current).length : 0;
+        const visibleItems = hideNight ? items.filter(item => !item.night || item.current) : items;
+
         if (!items.length) {
             const totalSent = countTotalSent();
-            $status.text(`Aucune attaque en attente${totalSent ? ` • ${formatNumber(totalSent)} fake${totalSent > 1 ? 's' : ''} envoyé${totalSent > 1 ? 's' : ''}` : ''}.`);
+            $status.text(`Aucune cible dans la playlist${totalSent ? ` • ${formatNumber(totalSent)} fake${totalSent > 1 ? 's' : ''} envoyé${totalSent > 1 ? 's' : ''}` : ''}.`);
         } else {
             const totalSent = countTotalSent();
-            $status.text(`${formatNumber(items.length)} attaque${items.length > 1 ? 's' : ''} en attente • ${formatNumber(totalSent)} fake${totalSent > 1 ? 's' : ''} envoyé${totalSent > 1 ? 's' : ''}`);
-            items.slice(0, 100).forEach((item, index) => {
+            const hiddenText = hiddenNightCount ? ` • ${formatNumber(hiddenNightCount)} NUIT masquée${hiddenNightCount > 1 ? 's' : ''}` : '';
+            $status.text(`${formatNumber(items.length)} cible${items.length > 1 ? 's' : ''} en rotation • ${formatNumber(totalSent)} fake${totalSent > 1 ? 's' : ''} envoyé${totalSent > 1 ? 's' : ''}${hiddenText}`);
+            visibleItems.slice(0, 100).forEach((item, index) => {
                 const player = state.world.playerById.get(item.village.playerId);
                 const tribe = player ? state.world.tribeById.get(player.tribeId) : null;
                 const who = player ? player.name : 'Barbare';
@@ -1153,8 +1184,11 @@
                     </div>
                 `);
             });
-            if (items.length > 100) {
-                $list.append(`<div class="wt-small">… ${formatNumber(items.length - 100)} cible(s) supplémentaire(s)</div>`);
+            if (!visibleItems.length && hiddenNightCount) {
+                $list.append(`<div class="wt-small">Toutes les cibles sont actuellement masquées car leur arrivée tombe dans le bonus de nuit.</div>`);
+            }
+            if (visibleItems.length > 100) {
+                $list.append(`<div class="wt-small">… ${formatNumber(visibleItems.length - 100)} cible(s) supplémentaire(s)</div>`);
             }
         }
 
@@ -1361,6 +1395,7 @@
         const current = collectSettingsFromUI();
         current.excludedCoords = [...new Set([...(current.excludedCoords || []), target])];
         saveSettingsObject(current);
+        getTargetQueue(current);
 
         if (getCurrentRallyTarget() === target) clearRallyTarget();
         if (getNextTarget(game_data.village && game_data.village.coord) === target) clearNextTarget(game_data.village && game_data.village.coord);
@@ -1457,6 +1492,46 @@
 
         const excluded = new Set((settings.excludedCoords || []).map(String));
         return [...coords].filter(coord => !excluded.has(coord));
+    }
+
+    function readTargetQueue() {
+        try {
+            const raw = JSON.parse(sessionStorage.getItem(TARGET_QUEUE_KEY) || '[]');
+            return Array.isArray(raw) ? parseCoordinates(raw.join(' ')) : [];
+        } catch (_) {
+            return [];
+        }
+    }
+
+    function writeTargetQueue(queue) {
+        const clean = parseCoordinates((queue || []).join(' '));
+        sessionStorage.setItem(TARGET_QUEUE_KEY, JSON.stringify(clean));
+        return clean;
+    }
+
+    // Synchronise la file persistante avec les cibles actuellement configurees.
+    // L'ordre deja acquis est conserve ; les nouvelles cibles sont ajoutees a la fin.
+    function getTargetQueue(settings = state.settings) {
+        const configured = buildTargetCoordinates(settings);
+        const allowed = new Set(configured);
+        const stored = readTargetQueue().filter(coord => allowed.has(coord));
+        const seen = new Set(stored);
+        for (const coord of configured) {
+            if (!seen.has(coord)) {
+                stored.push(coord);
+                seen.add(coord);
+            }
+        }
+        return writeTargetQueue(stored);
+    }
+
+    // Une cible envoyee n'est jamais retiree : elle repart a la fin de la playlist.
+    function rotateTargetToEnd(targetCoord, settings = state.settings) {
+        const target = parseCoordinates(targetCoord)[0];
+        if (!target) return;
+        const queue = getTargetQueue(settings).filter(coord => coord !== target);
+        if (buildTargetCoordinates(settings).includes(target)) queue.push(target);
+        writeTargetQueue(queue);
     }
 
     function getPlayableFakeUnits() {
@@ -2209,9 +2284,11 @@
     function markAsSent(sourceCoord, targetCoord) {
         const history = getHistory();
         const list = Array.isArray(history[sourceCoord]) ? history[sourceCoord] : [];
-        if (!list.includes(targetCoord)) list.push(targetCoord);
+        // Les doublons sont volontaires : une playlist circulaire peut fake plusieurs fois la meme cible.
+        list.push(targetCoord);
         history[sourceCoord] = list;
         sessionStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+        rotateTargetToEnd(targetCoord, state.settings);
     }
 
     function countSentToTarget(targetCoord) {
@@ -2220,7 +2297,7 @@
         const history = getHistory();
         return Object.values(history).reduce((total, list) => {
             if (!Array.isArray(list)) return total;
-            return total + (list.includes(target) ? 1 : 0);
+            return total + list.filter(coord => coord === target).length;
         }, 0);
     }
 
@@ -2524,7 +2601,7 @@
             : state.settings;
         saveSettingsObject(settings);
 
-        let targets = buildTargetCoordinates(settings);
+        let targets = getTargetQueue(settings);
         if (!targets.length) {
             notify('Error', 'Aucune cible configurée.');
             openPanel();
@@ -2541,18 +2618,13 @@
             targets = [preferredNext, ...targets.filter(coord => coord !== preferredNext)];
         }
         const now = getServerDateTime();
-        const diagnostics = { sent: 0, unknown: 0, night: 0, troops: 0, self: 0 };
+        const diagnostics = { unknown: 0, night: 0, troops: 0, self: 0 };
 
         for (const coord of targets) {
             if (coord === sourceCoord) {
                 diagnostics.self++;
                 continue;
             }
-            if (hasBeenSentGlobally(coord)) {
-                diagnostics.sent++;
-                continue;
-            }
-
             const village = state.world.villageByCoord.get(coord);
             if (!village) {
                 diagnostics.unknown++;
@@ -2595,7 +2667,6 @@
         }
 
         const details = [
-            diagnostics.sent ? `${diagnostics.sent} déjà attaquée(s)` : '',
             diagnostics.night ? `${diagnostics.night} arrivée(s) de nuit` : '',
             diagnostics.troops ? `${diagnostics.troops} impossible(s) avec les troupes disponibles` : '',
             diagnostics.unknown ? `${diagnostics.unknown} coordonnée(s) inconnue(s)` : '',
