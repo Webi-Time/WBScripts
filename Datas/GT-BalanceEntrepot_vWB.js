@@ -1,6 +1,6 @@
 /*
  * Webi-Time - GT Balance Entrepot
- * Version : 1.1.2
+ * Version : 1.1.3
  * Auteur  : NoLife4Ever / Webi-Time
  *
  * Base fonctionnelle inspiree du "Warehouse balancer" de Sophie "Shinko to Kuma".
@@ -24,7 +24,7 @@
 
     const SCRIPT = Object.freeze({
         name: 'GT Balance Entrepôt',
-        version: '1.1.2',
+        version: '1.1.3',
         prefix: 'wtwb'
     });
 
@@ -603,6 +603,34 @@
         return result;
     }
 
+    function enforceFinishedReserve(targets, villages) {
+        // La valeur "Entrepôt conservé — terminé" est une réserve minimale
+        // par ressource, pas un simple poids d'allocation.
+        //
+        // Exemple : entrepôt 400 000 + réglage 10 % => cible minimale
+        // 40 000 bois / 40 000 argile / 40 000 fer.
+        //
+        // Les cibles globales peuvent donc dépasser les ressources réellement
+        // disponibles : le plan laissera alors un déficit non satisfait au lieu
+        // d'autoriser un village terminé à descendre sous sa réserve.
+        const resources = ['wood', 'stone', 'iron'];
+
+        for (const village of villages) {
+            if (classifyVillage(village) !== 'finished') continue;
+
+            const reserve = round1000(targetLimit(village));
+            const target = targets.get(village.id) || { wood: 0, stone: 0, iron: 0 };
+
+            for (const resource of resources) {
+                target[resource] = Math.max(Number(target[resource]) || 0, reserve);
+            }
+
+            targets.set(village.id, target);
+        }
+
+        return targets;
+    }
+
     function computeTargets(villages, totals) {
         const targets = new Map();
         const s = state.settings;
@@ -621,7 +649,7 @@
                 const amount = allocation.get(v.id) || 0;
                 targets.set(v.id, { wood: amount, stone: amount, iron: amount });
             }
-            return targets;
+            return enforceFinishedReserve(targets, villages);
         }
 
         // EQUILIBRE INTERNE : chaque village conserve approximativement son volume
@@ -634,7 +662,7 @@
                 const amount = round1000(Math.min(localThird, targetLimit(v)));
                 targets.set(v.id, { wood: amount, stone: amount, iron: amount });
             }
-            return targets;
+            return enforceFinishedReserve(targets, villages);
         }
 
         // REMPLISSAGE : les villages prioritaires sont reserves dans l'ordre
@@ -662,7 +690,7 @@
                     }
                 }
             }
-            return targets;
+            return enforceFinishedReserve(targets, villages);
         }
 
         // EQUILIBRE EXTERNE : chaque ressource est repartie independamment.
@@ -673,7 +701,7 @@
             }
         }
 
-        return targets;
+        return enforceFinishedReserve(targets, villages);
     }
 
     function projectedResources(village) {
@@ -1237,6 +1265,7 @@
                 </div>
             </div>
             <div class="${SCRIPT.prefix}-mode-help">${escapeHtml(modeHelp)}</div>
+            <div class="${SCRIPT.prefix}-mode-help"><b>Village terminé :</b> le pourcentage configuré est une réserve minimale par ressource. Un village déjà sous ce seuil ne donnera pas davantage de cette ressource.</div>
 
             <details class="${SCRIPT.prefix}-advanced">
                 <summary>Options avancées</summary>
