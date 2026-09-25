@@ -1,6 +1,6 @@
 /*
  * Webi-Time - GT Balance Entrepot
- * Version : 1.2.0
+ * Version : 1.3.0
  * Auteur  : NoLife4Ever / Webi-Time
  *
  * Base fonctionnelle inspiree du "Warehouse balancer" de Sophie "Shinko to Kuma".
@@ -24,7 +24,7 @@
 
     const SCRIPT = Object.freeze({
         name: 'GT Balance Entrepôt',
-        version: '1.2.0',
+        version: '1.3.0',
         prefix: 'wtwb'
     });
 
@@ -536,177 +536,9 @@
         return Math.max(0, village.warehouseCapacity * state.settings.builtOutPercentage);
     }
 
-    function receiveCap(village) {
-        // Le pourcentage "prioritaire" est un plafond de réception, pas une
-        // quantité garantie. Les autres villages peuvent aller jusqu'à la
-        // capacité réelle de leur entrepôt.
-        if (classifyVillage(village) === 'priority') {
-            return Math.max(0, village.warehouseCapacity * state.settings.needsMorePercentage);
-        }
-        return Math.max(0, village.warehouseCapacity);
-    }
-
-    function minimumProjectedAmount(village, resource) {
-        // Quantité minimale que le plan peut réellement laisser après envoi.
-        // Les ressources entrantes ne sont pas disponibles pour être renvoyées
-        // avant leur arrivée. Pour un village terminé, on conserve en plus la
-        // réserve configurée sur le stock ACTUEL.
-        const inc = incomingFor(village)[resource] || 0;
-        const current = Number(village[resource]) || 0;
-        const reserve = finishedReserve(village);
-        const currentFloor = reserve > 0 ? Math.min(current, reserve) : 0;
-        return inc + currentFloor;
-    }
-
-    function maxCurrentSendable(village, resource, target) {
-        const inc = incomingFor(village)[resource] || 0;
-        const current = Number(village[resource]) || 0;
-        const reserve = finishedReserve(village);
-        const currentFloor = reserve > 0 ? Math.min(current, reserve) : 0;
-
-        // Pour finir au niveau cible en tenant compte des entrants, il faut
-        // garder au minimum target - entrants sur le stock actuellement présent.
-        const keepForTarget = Math.max(0, (Number(target) || 0) - inc);
-        const keepCurrent = Math.max(currentFloor, keepForTarget);
-        return Math.max(0, current - keepCurrent);
-    }
-
-    function solveEqualLevel(entries, total) {
-        // Cherche le niveau L tel que chaque village termine aussi près que
-        // possible de L, sous la forme clamp(L, minimum, maximum).
-        // C'est un water-filling avec bornes basses/hautes.
-        if (!entries.length) return 0;
-
-        const lowerSum = entries.reduce((sum, e) => sum + e.min, 0);
-        const upperSum = entries.reduce((sum, e) => sum + e.max, 0);
-        const budget = Math.max(lowerSum, Math.min(Number(total) || 0, upperSum));
-
-        let lo = Math.min(...entries.map(e => e.min));
-        let hi = Math.max(...entries.map(e => e.max));
-
-        for (let i = 0; i < 70; i++) {
-            const mid = (lo + hi) / 2;
-            const used = entries.reduce((sum, e) => sum + Math.min(e.max, Math.max(e.min, mid)), 0);
-            if (used <= budget) lo = mid;
-            else hi = mid;
-        }
-        return lo;
-    }
-
-    function buildEqualTargetsForResource(villages, total, resource) {
-        const entries = villages.map(v => {
-            const min = minimumProjectedAmount(v, resource);
-            const max = Math.max(min, receiveCap(v));
-            return { village: v, min, max };
-        });
-
-        const level = solveEqualLevel(entries, total);
-        const result = new Map();
-        for (const e of entries) {
-            result.set(e.village.id, Math.round(Math.min(e.max, Math.max(e.min, level))));
-        }
-        return { level, targets: result };
-    }
-
-    function computeTargets(villages, totals) {
-        const targets = new Map();
-        const s = state.settings;
-        const resources = ['wood', 'stone', 'iron'];
-
-        for (const v of villages) {
-            targets.set(v.id, { wood: 0, stone: 0, iron: 0 });
-        }
-
-        // MIX : même niveau recherché pour les trois ressources ET entre les
-        // villages. Le niveau commun est limité par la ressource la plus rare.
-        // Les surplus inconvertibles des ressources plus abondantes restent
-        // disponibles comme surplus (et peuvent ensuite être rapatriés Premium).
-        if (s.balanceMode === 'mix') {
-            const perResource = {};
-            for (const resource of resources) {
-                const entries = villages.map(v => {
-                    const min = minimumProjectedAmount(v, resource);
-                    return { min, max: Math.max(min, receiveCap(v)) };
-                });
-                perResource[resource] = {
-                    entries,
-                    level: solveEqualLevel(entries, totals[resource])
-                };
-            }
-
-            const commonLevel = Math.min(...resources.map(r => perResource[r].level));
-
-            for (let i = 0; i < villages.length; i++) {
-                const v = villages[i];
-                const target = targets.get(v.id);
-                for (const resource of resources) {
-                    const e = perResource[resource].entries[i];
-                    target[resource] = Math.round(Math.min(e.max, Math.max(e.min, commonLevel)));
-                }
-            }
-            return targets;
-        }
-
-        // EQUILIBRE INTERNE : chaque village vise le tiers de son volume total
-        // B+A+F. Il n'y a pas d'objectif d'égalité entre villages.
-        if (s.balanceMode === 'internal') {
-            for (const v of villages) {
-                const p = projectedResources(v);
-                const localThird = (p.wood + p.stone + p.iron) / 3;
-                const cap = receiveCap(v);
-                const target = targets.get(v.id);
-                for (const resource of resources) {
-                    target[resource] = Math.round(Math.min(cap, Math.max(0, localThird)));
-                }
-            }
-            return targets;
-        }
-
-        // REMPLISSAGE : chaque ressource est affectée en priorité stricte aux
-        // villages prioritaires du plus petit au plus grand jusqu'au plafond
-        // configuré. Les autres villages ne sont pas équilibrés avec le reliquat.
-        if (s.balanceMode === 'fill') {
-            const priorities = villages
-                .filter(v => classifyVillage(v) === 'priority')
-                .sort((a, b) => a.points - b.points);
-
-            for (const resource of resources) {
-                const lower = new Map();
-                let locked = 0;
-
-                for (const v of villages) {
-                    const min = minimumProjectedAmount(v, resource);
-                    lower.set(v.id, min);
-                    targets.get(v.id)[resource] = Math.round(min);
-                    locked += min;
-                }
-
-                let remaining = Math.max(0, (Number(totals[resource]) || 0) - locked);
-
-                for (const v of priorities) {
-                    if (remaining <= 0) break;
-                    const currentTarget = targets.get(v.id)[resource];
-                    const cap = Math.max(currentTarget, receiveCap(v));
-                    const room = Math.max(0, cap - currentTarget);
-                    const add = Math.min(room, remaining);
-                    targets.get(v.id)[resource] = Math.round(currentTarget + add);
-                    remaining -= add;
-                }
-            }
-            return targets;
-        }
-
-        // EQUILIBRE EXTERNE : chaque ressource est égalisée indépendamment.
-        // On cherche un niveau commun réel, en respectant la réserve d'envoi
-        // des villages terminés et le plafond de réception des prioritaires.
-        for (const resource of resources) {
-            const allocation = buildEqualTargetsForResource(villages, totals[resource]).targets;
-            for (const v of villages) {
-                targets.get(v.id)[resource] = allocation.get(v.id) || 0;
-            }
-        }
-
-        return targets;
+    function priorityReceiveCap(village) {
+        if (classifyVillage(village) !== 'priority') return village.warehouseCapacity;
+        return Math.max(0, village.warehouseCapacity * state.settings.needsMorePercentage);
     }
 
     function projectedResources(village) {
@@ -741,119 +573,577 @@
         row.distance = Number(link.distance) || row.distance || 0;
     }
 
-    function buildBasePlan(villages, targets) {
-        const s = state.settings;
-        const resources = ['wood', 'stone', 'iron'];
+    function createPlanningWork(villages) {
         const work = new Map();
-
         for (const v of villages) {
             const projected = projectedResources(v);
-            const target = targets.get(v.id) || { wood: 0, stone: 0, iron: 0 };
-
-            const node = {
+            work.set(v.id, {
                 id: v.id,
                 village: v,
                 projected: { ...projected },
-                target: { ...target },
-                deficit: {},
-                excess: {},
+                target: { ...projected },
+                deficit: { wood: 0, stone: 0, iron: 0 },
+                excess: { wood: 0, stone: 0, iron: 0 },
                 currentAvailable: {
-                    wood: v.wood,
-                    stone: v.stone,
-                    iron: v.iron
+                    wood: Math.max(0, v.wood),
+                    stone: Math.max(0, v.stone),
+                    iron: Math.max(0, v.iron)
                 },
                 merchantsLeft: Math.max(0, v.availableMerchants)
-            };
-
-            for (const r of resources) {
-                node.deficit[r] = round1000(Math.max(0, target[r] - projected[r]));
-
-                // Le surplus envoyable est limité simultanément par :
-                // 1) la cible finale ;
-                // 2) les ressources réellement présentes maintenant ;
-                // 3) la réserve minimale des villages terminés.
-                node.excess[r] = round1000(Math.min(
-                    Math.max(0, projected[r] - target[r]),
-                    maxCurrentSendable(v, r, target[r])
-                ));
-            }
-            work.set(v.id, node);
+            });
         }
+        return work;
+    }
 
-        const links = new Map();
+    function emptyTargets(villages) {
+        return new Map(villages.map(v => [v.id, projectedResources(v)]));
+    }
 
-        // Les cibles les plus petites / prioritaires sont traitees en premier.
-        const targetsOrder = [...villages].sort((a, b) => {
-            const classRank = { priority: 0, normal: 1, finished: 2 };
-            const ca = classRank[classifyVillage(a)];
-            const cb = classRank[classifyVillage(b)];
-            if (ca !== cb) return ca - cb;
-            return a.points - b.points;
+    function localMinimum(node) {
+        return Math.min(node.projected.wood, node.projected.stone, node.projected.iron);
+    }
+
+    function localMaximum(node) {
+        return Math.max(node.projected.wood, node.projected.stone, node.projected.iron);
+    }
+
+    function finishedSendable(node, resource) {
+        if (classifyVillage(node.village) !== 'finished') return 0;
+        const reserve = finishedReserve(node.village);
+        // Le Min protège le stock réellement présent. Une ressource entrante
+        // n'est jamais considérée comme immédiatement renvoyable.
+        return round1000(Math.max(0, Math.min(
+            node.currentAvailable[resource] - reserve,
+            node.merchantsLeft * 1000
+        )));
+    }
+
+    function targetExcessSendable(node, resource, targetValue) {
+        return round1000(Math.max(0, Math.min(
+            node.projected[resource] - targetValue,
+            node.currentAvailable[resource],
+            node.merchantsLeft * 1000
+        )));
+    }
+
+    function internalExcessSendable(node, resource) {
+        const floor = localMinimum(node);
+        return round1000(Math.max(0, Math.min(
+            node.projected[resource] - floor,
+            node.currentAvailable[resource],
+            node.merchantsLeft * 1000
+        )));
+    }
+
+    function applyTransfer(links, source, target, resource, amount, kind = 'balance') {
+        amount = round1000(amount);
+        if (amount < state.settings.minTransfer) return 0;
+        if (source.merchantsLeft * 1000 < amount) return 0;
+        if (source.currentAvailable[resource] < amount) return 0;
+
+        const dist = distance(source.village, target.village);
+        if (state.settings.maxDistance > 0 && dist > state.settings.maxDistance) return 0;
+
+        mergeLink(links, {
+            kind,
+            source: source.id,
+            target: target.id,
+            [resource]: amount,
+            distance: dist
         });
 
-        for (const targetVillage of targetsOrder) {
-            const targetNode = work.get(targetVillage.id);
+        source.projected[resource] -= amount;
+        source.currentAvailable[resource] -= amount;
+        source.merchantsLeft -= amount / 1000;
+        target.projected[resource] += amount;
+        return amount;
+    }
+
+    function solveEqualLevel(entries, total) {
+        if (!entries.length) return 0;
+        const upperSum = entries.reduce((sum, e) => sum + e.max, 0);
+        const budget = Math.max(0, Math.min(Number(total) || 0, upperSum));
+        let lo = 0;
+        let hi = Math.max(...entries.map(e => e.max), 0);
+
+        for (let i = 0; i < 70; i++) {
+            const mid = (lo + hi) / 2;
+            const used = entries.reduce((sum, e) => sum + Math.min(e.max, mid), 0);
+            if (used <= budget) lo = mid;
+            else hi = mid;
+        }
+        return lo;
+    }
+
+    function externalTargetsForResource(priorityNodes, finishedNodes, resource) {
+        const entries = priorityNodes.map(node => ({
+            node,
+            max: priorityReceiveCap(node.village)
+        }));
+
+        const priorityStock = priorityNodes.reduce((sum, node) => sum + node.projected[resource], 0);
+        const finishedSupply = finishedNodes.reduce((sum, node) => {
+            const reserve = finishedReserve(node.village);
+            return sum + Math.max(0, node.currentAvailable[resource] - reserve);
+        }, 0);
+
+        const level = solveEqualLevel(entries, priorityStock + finishedSupply);
+        const targets = new Map();
+        for (const entry of entries) {
+            targets.set(entry.node.id, Math.round(Math.min(entry.max, level)));
+        }
+        return { level, targets };
+    }
+
+    function sourceCandidatesForTarget(work, targetNode, resource, targetMap, allowFinished) {
+        return [...work.values()]
+            .filter(source => source.id !== targetNode.id && source.merchantsLeft >= 1)
+            .map(source => {
+                const type = classifyVillage(source.village);
+                let available = 0;
+                let rank = 99;
+
+                if (type === 'priority' && targetMap && targetMap.has(source.id)) {
+                    available = targetExcessSendable(source, resource, targetMap.get(source.id));
+                    rank = 0; // on redistribue d'abord l'excédent des prioritaires
+                } else if (allowFinished && type === 'finished') {
+                    available = finishedSendable(source, resource);
+                    rank = 1;
+                }
+
+                return {
+                    source,
+                    available,
+                    rank,
+                    dist: distance(source.village, targetNode.village)
+                };
+            })
+            .filter(x =>
+                x.available >= state.settings.minTransfer &&
+                (state.settings.maxDistance <= 0 || x.dist <= state.settings.maxDistance)
+            )
+            .sort((a, b) => {
+                if (a.rank !== b.rank) return a.rank - b.rank;
+                if (a.dist !== b.dist) return a.dist - b.dist;
+                return b.source.merchantsLeft - a.source.merchantsLeft;
+            });
+    }
+
+    function sendTowardTarget(work, links, targetNode, resource, targetValue, targetMap, allowFinished) {
+        let deficit = round1000(Math.max(0, targetValue - targetNode.projected[resource]));
+        let sent = 0;
+
+        while (deficit >= state.settings.minTransfer) {
+            const candidates = sourceCandidatesForTarget(
+                work, targetNode, resource, targetMap, allowFinished
+            );
+            if (!candidates.length) break;
+
+            let progressed = false;
+            for (const candidate of candidates) {
+                if (deficit < state.settings.minTransfer) break;
+                const amount = round1000(Math.min(deficit, candidate.available));
+                if (amount < state.settings.minTransfer) continue;
+                const actual = applyTransfer(
+                    links, candidate.source, targetNode, resource, amount, 'balance'
+                );
+                if (!actual) continue;
+                deficit -= actual;
+                sent += actual;
+                progressed = true;
+            }
+            if (!progressed) break;
+        }
+        return sent;
+    }
+
+    function finalizeFillExcess(work, targets) {
+        for (const node of work.values()) {
+            const type = classifyVillage(node.village);
+            for (const r of ['wood', 'stone', 'iron']) {
+                if (type === 'finished') {
+                    node.excess[r] = finishedSendable(node, r);
+                } else {
+                    node.excess[r] = 0;
+                }
+                const target = targets.get(node.id)[r];
+                node.deficit[r] = round1000(Math.max(0, target - node.projected[r]));
+            }
+        }
+    }
+
+    function buildFillPlan(villages) {
+        const resources = ['wood', 'stone', 'iron'];
+        const work = createPlanningWork(villages);
+        const targets = emptyTargets(villages);
+        const links = new Map();
+        const priorities = [...work.values()]
+            .filter(node => classifyVillage(node.village) === 'priority')
+            .sort((a, b) => {
+                if (a.village.warehouseCapacity !== b.village.warehouseCapacity) {
+                    return a.village.warehouseCapacity - b.village.warehouseCapacity;
+                }
+                return a.village.points - b.village.points;
+            });
+        const finished = [...work.values()]
+            .filter(node => classifyVillage(node.village) === 'finished');
+
+        for (const node of finished) {
+            const reserve = finishedReserve(node.village);
+            targets.set(node.id, { wood: reserve, stone: reserve, iron: reserve });
+            node.target = { wood: reserve, stone: reserve, iron: reserve };
+        }
+
+        let blocked = false;
+        for (const targetNode of priorities) {
+            if (blocked) break;
+            const cap = priorityReceiveCap(targetNode.village);
+            const target = { wood: cap, stone: cap, iron: cap };
+            targets.set(targetNode.id, target);
+            targetNode.target = { ...target };
 
             for (const resource of resources) {
-                while (targetNode.deficit[resource] >= s.minTransfer) {
-                    const candidates = [...work.values()]
+                let deficit = round1000(Math.max(0, cap - targetNode.projected[resource]));
+                while (deficit >= state.settings.minTransfer) {
+                    const candidates = finished
                         .filter(source =>
                             source.id !== targetNode.id &&
-                            source.excess[resource] >= s.minTransfer &&
-                            source.merchantsLeft >= 1
+                            finishedSendable(source, resource) >= state.settings.minTransfer
                         )
                         .map(source => ({
                             source,
-                            dist: distance(source.village, targetVillage)
+                            dist: distance(source.village, targetNode.village)
                         }))
-                        .filter(x => s.maxDistance <= 0 || x.dist <= s.maxDistance)
+                        .filter(x => state.settings.maxDistance <= 0 || x.dist <= state.settings.maxDistance)
                         .sort((a, b) => {
                             if (a.dist !== b.dist) return a.dist - b.dist;
                             return b.source.merchantsLeft - a.source.merchantsLeft;
                         });
 
                     if (!candidates.length) break;
-
                     let progressed = false;
-
                     for (const candidate of candidates) {
-                        if (targetNode.deficit[resource] < s.minTransfer) break;
-
-                        const source = candidate.source;
-                        const merchantCapacity = source.merchantsLeft * 1000;
-                        let amount = Math.min(
-                            targetNode.deficit[resource],
-                            source.excess[resource],
-                            merchantCapacity
+                        if (deficit < state.settings.minTransfer) break;
+                        const available = finishedSendable(candidate.source, resource);
+                        const amount = round1000(Math.min(deficit, available));
+                        if (amount < state.settings.minTransfer) continue;
+                        const actual = applyTransfer(
+                            links, candidate.source, targetNode, resource, amount, 'balance'
                         );
-                        amount = round1000(amount);
-
-                        if (amount < s.minTransfer) continue;
-
-                        mergeLink(links, {
-                            kind: 'balance',
-                            source: source.id,
-                            target: targetNode.id,
-                            [resource]: amount,
-                            distance: candidate.dist
-                        });
-
-                        source.excess[resource] -= amount;
-                        source.currentAvailable[resource] -= amount;
-                        source.merchantsLeft -= amount / 1000;
-                        source.projected[resource] -= amount;
-
-                        targetNode.deficit[resource] -= amount;
-                        targetNode.projected[resource] += amount;
+                        if (!actual) continue;
+                        deficit -= actual;
                         progressed = true;
                     }
-
                     if (!progressed) break;
+                }
+            }
+
+            // Tant que le village courant n'est pas rempli au Max (à la granularité
+            // transportable), aucun village prioritaire suivant n'est commencé.
+            blocked = resources.some(resource =>
+                round1000(Math.max(0, cap - targetNode.projected[resource])) >= state.settings.minTransfer
+            );
+        }
+
+        finalizeFillExcess(work, targets);
+        return { work, targets, links: [...links.values()] };
+    }
+
+    function buildExternalPlan(villages, mixMode = false) {
+        const resources = ['wood', 'stone', 'iron'];
+        const work = createPlanningWork(villages);
+        const targets = emptyTargets(villages);
+        const links = new Map();
+        const priorities = [...work.values()]
+            .filter(node => classifyVillage(node.village) === 'priority');
+        const finished = [...work.values()]
+            .filter(node => classifyVillage(node.village) === 'finished');
+
+        // Les villages terminés ont une réserve Min, pas une cible de réception.
+        for (const node of finished) {
+            const reserve = finishedReserve(node.village);
+            targets.set(node.id, { wood: reserve, stone: reserve, iron: reserve });
+            node.target = { wood: reserve, stone: reserve, iron: reserve };
+        }
+
+        const resourceTargetMaps = {};
+        for (const resource of resources) {
+            const result = externalTargetsForResource(priorities, finished, resource);
+            resourceTargetMaps[resource] = result.targets;
+            for (const node of priorities) {
+                targets.get(node.id)[resource] = result.targets.get(node.id) || 0;
+            }
+        }
+        for (const node of priorities) node.target = { ...targets.get(node.id) };
+
+        if (!mixMode) {
+            // Externe : chaque ressource est traitée indépendamment. Les villages
+            // les plus bas pour cette ressource sont servis en premier.
+            for (const resource of resources) {
+                const targetMap = resourceTargetMaps[resource];
+                const ordered = [...priorities].sort((a, b) =>
+                    a.projected[resource] - b.projected[resource]
+                );
+                for (const targetNode of ordered) {
+                    sendTowardTarget(
+                        work,
+                        links,
+                        targetNode,
+                        resource,
+                        targetMap.get(targetNode.id) || 0,
+                        targetMap,
+                        true
+                    );
+                }
+            }
+        } else {
+            // Mix : l'objectif externe reste prioritaire. Parmi les déficits
+            // possibles, on sert d'abord la ressource qui réduit le plus l'écart
+            // B/A/F du village destinataire.
+            let guard = 0;
+            while (guard++ < 10000) {
+                const needs = [];
+                for (const node of priorities) {
+                    const localMax = localMaximum(node);
+                    for (const resource of resources) {
+                        const targetValue = resourceTargetMaps[resource].get(node.id) || 0;
+                        const deficit = round1000(Math.max(0, targetValue - node.projected[resource]));
+                        if (deficit < state.settings.minTransfer) continue;
+                        needs.push({
+                            node,
+                            resource,
+                            targetValue,
+                            deficit,
+                            internalGap: Math.max(0, localMax - node.projected[resource])
+                        });
+                    }
+                }
+                if (!needs.length) break;
+
+                needs.sort((a, b) => {
+                    // L'écart externe reste le critère principal.
+                    if (b.deficit !== a.deficit) return b.deficit - a.deficit;
+                    if (b.internalGap !== a.internalGap) return b.internalGap - a.internalGap;
+                    return a.node.village.points - b.node.village.points;
+                });
+
+                let progressed = false;
+                for (const need of needs) {
+                    const candidates = sourceCandidatesForTarget(
+                        work,
+                        need.node,
+                        need.resource,
+                        resourceTargetMaps[need.resource],
+                        true
+                    );
+                    if (!candidates.length) continue;
+
+                    const candidate = candidates[0];
+                    let amount = Math.min(need.deficit, candidate.available);
+
+                    // Pour favoriser l'équilibre interne, on évite de dépasser
+                    // inutilement le niveau de la ressource immédiatement supérieure.
+                    const values = resources
+                        .filter(r => r !== need.resource)
+                        .map(r => need.node.projected[r])
+                        .sort((a, b) => a - b);
+                    const nextLocal = values.find(v => v > need.node.projected[need.resource]);
+                    if (Number.isFinite(nextLocal)) {
+                        const localRoom = Math.max(
+                            state.settings.minTransfer,
+                            Math.ceil((nextLocal - need.node.projected[need.resource]) / 1000) * 1000
+                        );
+                        amount = Math.min(amount, localRoom);
+                    }
+
+                    amount = round1000(amount);
+                    if (amount < state.settings.minTransfer) continue;
+                    if (applyTransfer(links, candidate.source, need.node, need.resource, amount, 'balance')) {
+                        progressed = true;
+                        break; // recalcul complet des écarts après chaque transport
+                    }
+                }
+                if (!progressed) break;
+            }
+        }
+
+        // Déficits et surplus résiduels après la redistribution.
+        for (const node of work.values()) {
+            const type = classifyVillage(node.village);
+            for (const resource of resources) {
+                if (type === 'priority') {
+                    const targetValue = targets.get(node.id)[resource];
+                    node.deficit[resource] = round1000(Math.max(0, targetValue - node.projected[resource]));
+                    node.excess[resource] = targetExcessSendable(node, resource, targetValue);
+                } else if (type === 'finished') {
+                    node.deficit[resource] = 0;
+                    node.excess[resource] = finishedSendable(node, resource);
+                } else {
+                    node.deficit[resource] = 0;
+                    node.excess[resource] = 0;
                 }
             }
         }
 
-        return { work, links: [...links.values()] };
+        return { work, targets, links: [...links.values()] };
+    }
+
+    function planInternalStep(work, targetNode) {
+        const resources = ['wood', 'stone', 'iron'];
+        const minValue = localMinimum(targetNode);
+        const maxValue = localMaximum(targetNode);
+        if (maxValue - minValue < state.settings.minTransfer) return null;
+
+        const lows = resources.filter(r => targetNode.projected[r] === minValue);
+        if (!lows.length) return null;
+
+        // Si une seule ressource est basse, on cherche à la faire rejoindre la
+        // suivante. Si plusieurs sont à égalité, elles doivent toutes monter :
+        // sinon le niveau d'équilibre du village ne progresserait pas.
+        let desiredPerResource = state.settings.minTransfer;
+        if (lows.length === 1) {
+            const higher = resources
+                .map(r => targetNode.projected[r])
+                .filter(v => v > minValue)
+                .sort((a, b) => a - b)[0];
+            if (Number.isFinite(higher)) {
+                desiredPerResource = Math.max(
+                    state.settings.minTransfer,
+                    Math.ceil((higher - minValue) / 1000) * 1000
+                );
+            }
+        }
+
+        const reservations = new Map();
+        const allocations = [];
+
+        for (const resource of lows) {
+            let remaining = desiredPerResource;
+            const candidates = [...work.values()]
+                .filter(source => source.id !== targetNode.id)
+                .map(source => ({
+                    source,
+                    available: internalExcessSendable(source, resource),
+                    dist: distance(source.village, targetNode.village)
+                }))
+                .filter(x =>
+                    x.available >= state.settings.minTransfer &&
+                    (state.settings.maxDistance <= 0 || x.dist <= state.settings.maxDistance)
+                )
+                .sort((a, b) => {
+                    if (a.dist !== b.dist) return a.dist - b.dist;
+                    return b.available - a.available;
+                });
+
+            for (const candidate of candidates) {
+                if (remaining < state.settings.minTransfer) break;
+                const alreadyReserved = reservations.get(candidate.source.id) || 0;
+                const merchantRoom = Math.max(
+                    0,
+                    (candidate.source.merchantsLeft * 1000) - alreadyReserved
+                );
+                let available = Math.min(candidate.available, merchantRoom);
+                available = round1000(available);
+                if (available < state.settings.minTransfer) continue;
+
+                const amount = round1000(Math.min(remaining, available));
+                if (amount < state.settings.minTransfer) continue;
+                allocations.push({
+                    source: candidate.source,
+                    resource,
+                    amount,
+                    dist: candidate.dist
+                });
+                reservations.set(candidate.source.id, alreadyReserved + amount);
+                remaining -= amount;
+            }
+
+            // Avec une seule ressource basse, tout apport transportable améliore
+            // déjà l'équilibre, même s'il ne rejoint pas complètement la suivante.
+            // Avec plusieurs ressources au même minimum, elles doivent toutes être
+            // servies : sinon le minimum global du village ne progresserait pas.
+            const allocated = desiredPerResource - remaining;
+            if (lows.length === 1) {
+                if (allocated < state.settings.minTransfer) return null;
+            } else if (remaining >= state.settings.minTransfer) {
+                return null;
+            }
+        }
+
+        return { target: targetNode, allocations };
+    }
+
+    function buildInternalPlan(villages) {
+        const resources = ['wood', 'stone', 'iron'];
+        const work = createPlanningWork(villages);
+        const targets = emptyTargets(villages);
+        const links = new Map();
+
+        let guard = 0;
+        while (guard++ < 10000) {
+            const ordered = [...work.values()]
+                .sort((a, b) => {
+                    const minDiff = localMinimum(a) - localMinimum(b);
+                    if (minDiff !== 0) return minDiff;
+                    const spreadA = localMaximum(a) - localMinimum(a);
+                    const spreadB = localMaximum(b) - localMinimum(b);
+                    if (spreadB !== spreadA) return spreadB - spreadA;
+                    return a.village.points - b.village.points;
+                });
+
+            let step = null;
+            for (const targetNode of ordered) {
+                step = planInternalStep(work, targetNode);
+                if (step) break;
+            }
+            if (!step) break;
+
+            let committed = true;
+            for (const allocation of step.allocations) {
+                const actual = applyTransfer(
+                    links,
+                    allocation.source,
+                    step.target,
+                    allocation.resource,
+                    allocation.amount,
+                    'balance'
+                );
+                if (!actual) {
+                    committed = false;
+                    break;
+                }
+            }
+            if (!committed) break;
+        }
+
+        // La cible interne finale est le niveau commun réellement atteignable
+        // dans chaque village après les échanges utiles.
+        for (const node of work.values()) {
+            const level = localMinimum(node);
+            const target = { wood: level, stone: level, iron: level };
+            targets.set(node.id, target);
+            node.target = { ...target };
+            for (const resource of resources) {
+                node.deficit[resource] = 0;
+                node.excess[resource] = internalExcessSendable(node, resource);
+            }
+        }
+
+        return { work, targets, links: [...links.values()] };
+    }
+
+    function buildModePlan(villages) {
+        switch (state.settings.balanceMode) {
+            case 'fill':
+                return buildFillPlan(villages);
+            case 'internal':
+                return buildInternalPlan(villages);
+            case 'external':
+                return buildExternalPlan(villages, false);
+            case 'mix':
+            default:
+                return buildExternalPlan(villages, true);
+        }
     }
 
     function choosePremiumCollector(work) {
@@ -1040,8 +1330,8 @@
                 projectedTotals.iron += p.iron;
             }
 
-            state.targets = computeTargets(state.villages, projectedTotals);
-            const baseResult = buildBasePlan(state.villages, state.targets);
+            const baseResult = buildModePlan(state.villages);
+            state.targets = baseResult.targets;
             const premiumResult = buildPremiumPlan(baseResult.work);
 
             state.baseLinks = baseResult.links;
@@ -1239,10 +1529,10 @@
     function buildSettingsHtml() {
         const s = state.settings;
         const modeHelp = {
-            mix: 'Égalise à la fois les villages entre eux et bois / argile / fer. La ressource la plus rare fixe le niveau commun atteignable.',
-            external: 'Égalise chaque ressource indépendamment entre les villages. Le % prioritaire est un plafond de réception.',
-            internal: 'Égalise bois / argile / fer à l’intérieur de chaque village autour de son volume total actuel, sans uniformiser les villages entre eux.',
-            fill: 'Remplit les villages prioritaires du plus petit au plus grand jusqu’au % défini. Le suivant n’est servi qu’après le précédent.'
+            mix: 'Combine l’équilibre externe et interne : égalité entre prioritaires d’abord, puis préférence aux transferts qui réduisent aussi l’écart bois / argile / fer.',
+            external: 'Égalise chaque ressource entre les villages prioritaires. Les terminés complètent la réserve sans descendre sous le Min ; le Max reste un plafond.',
+            internal: 'Égalise bois / argile / fer dans chaque village par échanges d’excédents locaux. Les pourcentages Min / Max ne participent pas à ce calcul.',
+            fill: 'Remplit les prioritaires du plus petit entrepôt au plus gros (puis par points), uniquement depuis les terminés. Le suivant n’est servi qu’après le précédent.'
         }[s.balanceMode] || '';
 
         return `
@@ -1265,16 +1555,16 @@
                     <input id="${SCRIPT.prefix}HighPoints" class="${SCRIPT.prefix}-input" type="number" min="0" value="${s.highPoints}">
                 </div>
                 <div class="${SCRIPT.prefix}-field">
-                    <label>Entrepôt conservé — terminé (%)</label>
+                    <label>Min — terminé (% entrepôt)</label>
                     <input id="${SCRIPT.prefix}BuiltOutPct" class="${SCRIPT.prefix}-input" type="number" min="1" max="100" value="${Math.round(s.builtOutPercentage * 100)}">
                 </div>
                 <div class="${SCRIPT.prefix}-field">
-                    <label>Entrepôt cible — prioritaire (%)</label>
+                    <label>Max — prioritaire (% entrepôt)</label>
                     <input id="${SCRIPT.prefix}NeedsMorePct" class="${SCRIPT.prefix}-input" type="number" min="1" max="100" value="${Math.round(s.needsMorePercentage * 100)}">
                 </div>
             </div>
             <div class="${SCRIPT.prefix}-mode-help">${escapeHtml(modeHelp)}</div>
-            <div class="${SCRIPT.prefix}-mode-help"><b>Règles :</b> le % terminé est uniquement une réserve minimale d’envoi par ressource ; le % prioritaire est uniquement un plafond de réception. Aucun des deux ne garantit une quantité cible.</div>
+            <div class="${SCRIPT.prefix}-mode-help"><b>Min / Max :</b> utilisés par Remplissage, Externe et Mix. Le mode Interne travaille uniquement avec les quantités réelles et les excédents locaux.</div>
 
             <details class="${SCRIPT.prefix}-advanced">
                 <summary>Options avancées</summary>
@@ -1438,7 +1728,7 @@
                     <div class="${SCRIPT.prefix}-table-wrap">
                         <table class="${SCRIPT.prefix}-table">
                             <thead>
-                                <tr><th>Village</th><th>Statut</th><th>Points</th><th title="Ressources prises en compte avant le plan${state.settings.includeIncoming ? ' (entrants inclus)' : ''}">Actuel <span class="icon header wood"></span>/<span class="icon header stone"></span>/<span class="icon header iron"></span></th><th title="Objectif calculé par le mode choisi. Le % terminé reste une réserve d’envoi et n’est pas une cible de réception.">Cible <span class="icon header wood"></span>/<span class="icon header stone"></span>/<span class="icon header iron"></span></th><th>Après plan <span class="icon header wood"></span>/<span class="icon header stone"></span>/<span class="icon header iron"></span></th><th>Marchands</th><th>Entrepôt</th></tr>
+                                <tr><th>Village</th><th>Statut</th><th>Points</th><th title="Ressources prises en compte avant le plan${state.settings.includeIncoming ? ' (entrants inclus)' : ''}">Actuel <span class="icon header wood"></span>/<span class="icon header stone"></span>/<span class="icon header iron"></span></th><th title="Objectif calculé par le mode choisi. En Interne, il représente le niveau B/A/F équilibrable du village ; dans les autres modes, Min/Max encadrent les sources et destinations.">Cible <span class="icon header wood"></span>/<span class="icon header stone"></span>/<span class="icon header iron"></span></th><th>Après plan <span class="icon header wood"></span>/<span class="icon header stone"></span>/<span class="icon header iron"></span></th><th>Marchands</th><th>Entrepôt</th></tr>
                             </thead>
                             <tbody>${rows}</tbody>
                         </table>
