@@ -1,6 +1,6 @@
 /*
  * Webi-Time - GT Fake Intelligent
- * Version : 1.29.0
+ * Version : 1.30.0
  * Auteur  : NoLife4Ever / Webi-Time
  *
  * Principes repris et ameliores a partir de plusieurs scripts de fake GT :
@@ -18,7 +18,7 @@
 
     const SCRIPT = Object.freeze({
         name: 'GT Fake Intelligent',
-        version: '1.29.0',
+        version: '1.30.0',
         prefix: 'wtfi'
     });
 
@@ -1011,12 +1011,28 @@
     }
 
     function getOutgoingCommandsBaseUrl() {
+        let url = '';
         try {
             if (window.TribalWars && typeof TribalWars.buildURL === 'function') {
-                return TribalWars.buildURL('GET', 'overview_villages', { mode: 'commands', type: 'attack' });
+                url = TribalWars.buildURL('GET', 'overview_villages', {
+                    mode: 'commands',
+                    type: 'attack',
+                    group: 0
+                });
             }
         } catch (_) {}
-        return game_data.link_base_pure + 'overview_villages&mode=commands&type=attack';
+
+        if (!url) {
+            url = game_data.link_base_pure + 'overview_villages&mode=commands&type=attack&group=0';
+        }
+
+        const parsed = new URL(url, window.location.origin);
+        // Toujours lire les commandes de l'ensemble du compte, même si l'interface
+        // Guerre Tribale est actuellement positionnée sur un groupe de villages.
+        parsed.searchParams.set('group', '0');
+        parsed.searchParams.set('type', 'attack');
+        parsed.searchParams.set('mode', 'commands');
+        return parsed.href;
     }
 
     function withPageParameter(url, page) {
@@ -1025,7 +1041,18 @@
         return parsed.href;
     }
 
-    function getCommandsMaxPage($html) {
+    async function fetchCommandsHtml(url) {
+        const response = await fetch(url, {
+            method: 'GET',
+            credentials: 'same-origin',
+            cache: 'no-store',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status} sur l'aperçu des commandes`);
+        return await response.text();
+    }
+
+    function getCommandsMaxPage(doc) {
         let maxPage = 0;
         const inspect = value => {
             const raw = String(value || '');
@@ -1033,27 +1060,77 @@
             if (!match && /^\d+$/.test(raw.trim())) match = [raw, raw.trim()];
             if (match) maxPage = Math.max(maxPage, Number(match[1]) || 0);
         };
-        $html.find('a.paged-nav-item[href*="page="], option').each(function () {
-            inspect($(this).attr('href'));
-            inspect($(this).val());
+        doc.querySelectorAll('a.paged-nav-item[href*="page="], option').forEach(node => {
+            inspect(node.getAttribute('href'));
+            inspect(node.value);
         });
         return maxPage;
     }
 
-    function addOutgoingCommandRowsToCounts($html, counts) {
-        const $rows = $html.find('#commands_table').find('tr.row_a, tr.row_ax, tr.row_b, tr.row_bx');
-        $rows.each(function () {
-            const $row = $(this);
-            let coord = parseCoordinates($row.find('.quickedit-label').first().text())[0];
-            if (!coord) {
-                // Secours pour certaines variantes de l'aperçu : le premier lien village du libellé
-                // correspond à la cible sur l'écran des commandes sortantes.
-                coord = parseCoordinates($row.find('a[href*="screen=info_village"]').first().text())[0];
-            }
-            if (!coord) return;
-            counts.set(coord, (counts.get(coord) || 0) + 1);
+    function extractTargetCoordFromCommandRow(row) {
+        const candidates = [];
+        const push = value => {
+            if (value !== undefined && value !== null && String(value).trim()) candidates.push(String(value));
+        };
+
+        const label = row.querySelector('.quickedit-label');
+        if (label) {
+            push(label.textContent);
+            push(label.getAttribute('title'));
+            push(label.innerHTML);
+        }
+
+        // Sur les différentes vues GT, la destination se trouve généralement dans
+        // la première cellule de la commande, même si le libellé a été renommé.
+        const firstCell = row.querySelector('td');
+        if (firstCell) {
+            push(firstCell.textContent);
+            push(firstCell.getAttribute('title'));
+        }
+
+        // Fallback sur les liens vers le village cible. On inspecte texte, titre et href.
+        row.querySelectorAll('a[href*="screen=info_village"], a[href*="info_village"]').forEach(link => {
+            push(link.textContent);
+            push(link.getAttribute('title'));
+            push(link.getAttribute('href'));
         });
-        return $rows.length;
+
+        for (const value of candidates) {
+            const coord = parseCoordinates(value)[0];
+            if (coord) return coord;
+        }
+        return '';
+    }
+
+    function isOutgoingAttackRow(row) {
+        if (!row || !row.querySelector('td')) return false;
+
+        // L'URL type=attack filtre déjà les commandes, mais certaines versions de
+        // l'aperçu peuvent aussi afficher des retours. On les exclut explicitement.
+        const iconSources = [...row.querySelectorAll('img[src]')]
+            .map(img => String(img.getAttribute('src') || '').toLowerCase())
+            .join(' ');
+        if (/return_|back\.png|support/.test(iconSources)) return false;
+
+        const text = String(row.textContent || '').toLowerCase();
+        if (/\bretour\b|\breturn\b/.test(text) && !/attaque|attack/.test(text)) return false;
+        return true;
+    }
+
+    function addOutgoingCommandRowsToCounts(html, counts) {
+        const doc = new DOMParser().parseFromString(String(html || ''), 'text/html');
+        const table = doc.querySelector('#commands_table');
+        if (!table) return { rows: 0, parsed: 0, doc };
+
+        const rows = [...table.querySelectorAll('tr')].filter(isOutgoingAttackRow);
+        let parsed = 0;
+        for (const row of rows) {
+            const coord = extractTargetCoordFromCommandRow(row);
+            if (!coord) continue;
+            counts.set(coord, (counts.get(coord) || 0) + 1);
+            parsed++;
+        }
+        return { rows: rows.length, parsed, doc };
     }
 
     async function refreshOutgoingAttackCounts(force = false) {
@@ -1066,19 +1143,27 @@
         state.outgoingAttackCountsPromise = (async () => {
             const counts = new Map();
             const baseUrl = getOutgoingCommandsBaseUrl();
-            const firstHtml = await $.get(withPageParameter(baseUrl, -1));
-            const $first = $(firstHtml);
-            const firstRows = addOutgoingCommandRowsToCounts($first, counts);
 
-            // page=-1 renvoie jusqu'à 1000 commandes. S'il y en a davantage,
-            // on poursuit uniquement à partir de la première page non déjà incluse.
-            if (firstRows >= 1000) {
-                const pageSize = Math.max(1, parseInt($first.find('input[name="page_size"]').first().val(), 10) || 100);
-                const maxPage = getCommandsMaxPage($first);
-                let page = Math.floor(firstRows / pageSize);
+            // page=-1 permet normalement de récupérer jusqu'à 1000 commandes en une fois.
+            // Si le serveur ne renvoie aucune ligne avec cette valeur, on retente page=0.
+            let firstHtml = await fetchCommandsHtml(withPageParameter(baseUrl, -1));
+            let first = addOutgoingCommandRowsToCounts(firstHtml, counts);
+            if (first.rows === 0) {
+                firstHtml = await fetchCommandsHtml(withPageParameter(baseUrl, 0));
+                first = addOutgoingCommandRowsToCounts(firstHtml, counts);
+            }
+
+            // Lorsque page=-1 contient 1000 commandes ou davantage, on poursuit sur
+            // les pages suivantes. La déduplication se fait par page : on ne reparcourt
+            // page=0 que si page=-1 n'était pas exploitable.
+            if (first.rows >= 1000) {
+                const pageSizeInput = first.doc.querySelector('input[name="page_size"]');
+                const pageSize = Math.max(1, parseInt(pageSizeInput && pageSizeInput.value, 10) || 100);
+                const maxPage = getCommandsMaxPage(first.doc);
+                let page = Math.max(1, Math.floor(first.rows / pageSize));
                 while (page <= maxPage && page < 250) {
-                    const html = await $.get(withPageParameter(baseUrl, page));
-                    addOutgoingCommandRowsToCounts($(html), counts);
+                    const html = await fetchCommandsHtml(withPageParameter(baseUrl, page));
+                    addOutgoingCommandRowsToCounts(html, counts);
                     page++;
                 }
             }
