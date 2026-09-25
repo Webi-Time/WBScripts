@@ -1,6 +1,6 @@
 /*
  * Webi-Time - GT Balance Entrepot
- * Version : 1.1.1
+ * Version : 1.1.2
  * Auteur  : NoLife4Ever / Webi-Time
  *
  * Base fonctionnelle inspiree du "Warehouse balancer" de Sophie "Shinko to Kuma".
@@ -15,9 +15,8 @@
  * - consolidation optionnelle des surplus vers un village pour l'echange Premium ;
  * - compatible desktop/mobile avec plusieurs fallbacks de parsing.
  *
- * Le script ne lance jamais une rafale automatique de transports :
- * chaque ligne doit etre validee. Le bouton suivant reprend le focus pour
- * permettre l'utilisation de la touche ENTREE.
+ * Les transports peuvent etre envoyes ligne par ligne ou via "Tout envoyer".
+ * L'envoi global reste sequentiel afin de limiter les requetes simultanees.
  */
 
 (async function WebiTimeWarehouseBalancerBootstrap() {
@@ -25,7 +24,7 @@
 
     const SCRIPT = Object.freeze({
         name: 'GT Balance Entrepôt',
-        version: '1.1.1',
+        version: '1.1.2',
         prefix: 'wtwb'
     });
 
@@ -1162,13 +1161,14 @@
             .${SCRIPT.prefix}-notice.error{border-color:#d84d4d;background:#241414;color:#ffb7b7}
             .${SCRIPT.prefix}-table-wrap{overflow:auto;border:1px solid #343434;border-radius:5px}
             .${SCRIPT.prefix}-table{width:100%;border-collapse:collapse;min-width:740px;font-size:9px}
-            .${SCRIPT.prefix}-table th{position:sticky;top:0;z-index:1;padding:6px;background:#111;color:var(--wt-orange);border-bottom:1px solid #7a4a08;text-align:center;white-space:nowrap}
+            .${SCRIPT.prefix}-table th{position:sticky;top:0;z-index:1;padding:6px;background-color:unset!important;background-image:linear-gradient(#111,#111)!important;color:var(--wt-orange)!important;border-bottom:1px solid #7a4a08;text-align:center;white-space:nowrap}
             .${SCRIPT.prefix}-table td{padding:5px;border-bottom:1px solid #2d2d2d;text-align:center}
             .${SCRIPT.prefix}-table tbody tr:nth-child(even) td{background:#1c1c1c}
             .${SCRIPT.prefix}-table tbody tr:hover td{background:#26221d}
             .${SCRIPT.prefix}-village{max-width:230px;text-align:left!important}
             .${SCRIPT.prefix}-village a{color:#ddd;text-decoration:none}.${SCRIPT.prefix}-village a:hover{color:var(--wt-orange-soft)}
             .${SCRIPT.prefix}-res{font-variant-numeric:tabular-nums;white-space:nowrap}
+            .${SCRIPT.prefix}-res .icon,.${SCRIPT.prefix}-table th .icon,.${SCRIPT.prefix}-notice .icon{display:inline-block;vertical-align:-2px;margin-right:3px}
             .${SCRIPT.prefix}-kind{display:inline-block;padding:2px 5px;border-radius:99px;font-size:8px;font-weight:800;text-transform:uppercase}
             .${SCRIPT.prefix}-kind.balance{background:#213226;color:#7de1a1}.${SCRIPT.prefix}-kind.premium{background:#342615;color:#ffba5b}
             .${SCRIPT.prefix}-transfers-actions{display:flex;justify-content:flex-end;gap:6px;margin-bottom:6px}.${SCRIPT.prefix}-empty{padding:14px;text-align:center;color:#777}
@@ -1295,9 +1295,9 @@
             </div>
             <div class="${SCRIPT.prefix}-notice">
                 Total projeté (entrants inclus) :
-                🪵 ${fmt(s.totals.wood + s.incomingTotals.wood)} ·
-                🧱 ${fmt(s.totals.stone + s.incomingTotals.stone)} ·
-                ⛓️ ${fmt(s.totals.iron + s.incomingTotals.iron)}
+                <span class="icon header wood"></span>${fmt(s.totals.wood + s.incomingTotals.wood)} ·
+                <span class="icon header stone"></span>${fmt(s.totals.stone + s.incomingTotals.stone)} ·
+                <span class="icon header iron"></span>${fmt(s.totals.iron + s.incomingTotals.iron)}
                 ${collector ? `<br>Collecteur Premium : <span class="${SCRIPT.prefix}-collector-info">${escapeHtml(collector.name)}</span>
                 — ${fmt(premiumTotal)} ressources à rapatrier.` : ''}
             </div>
@@ -1324,9 +1324,9 @@
                     <td class="${SCRIPT.prefix}-village"><a href="${escapeHtml(source.url)}">${escapeHtml(source.name)}</a></td>
                     <td class="${SCRIPT.prefix}-village"><a href="${escapeHtml(target.url)}">${escapeHtml(target.name)}</a></td>
                     <td>${link.distance.toFixed(1)}</td>
-                    <td class="${SCRIPT.prefix}-res">${link.wood ? '🪵 ' + fmt(link.wood) : '—'}</td>
-                    <td class="${SCRIPT.prefix}-res">${link.stone ? '🧱 ' + fmt(link.stone) : '—'}</td>
-                    <td class="${SCRIPT.prefix}-res">${link.iron ? '⛓️ ' + fmt(link.iron) : '—'}</td>
+                    <td class="${SCRIPT.prefix}-res">${link.wood ? '<span class="icon header wood"></span>' + fmt(link.wood) : '—'}</td>
+                    <td class="${SCRIPT.prefix}-res">${link.stone ? '<span class="icon header stone"></span>' + fmt(link.stone) : '—'}</td>
+                    <td class="${SCRIPT.prefix}-res">${link.iron ? '<span class="icon header iron"></span>' + fmt(link.iron) : '—'}</td>
                     <td>${merchants}</td>
                     <td><button class="${SCRIPT.prefix}-btn ${SCRIPT.prefix}-send" data-index="${index}">Envoyer</button></td>
                 </tr>
@@ -1342,7 +1342,7 @@
                     <thead>
                         <tr>
                             <th>Type</th><th>Origine</th><th>Destination</th><th>Dist.</th>
-                            <th>Bois</th><th>Argile</th><th>Fer</th><th>March.</th><th></th>
+                            <th><span class="icon header wood"></span>Bois</th><th><span class="icon header stone"></span>Argile</th><th><span class="icon header iron"></span>Fer</th><th>March.</th><th></th>
                         </tr>
                     </thead>
                     <tbody>${rows}</tbody>
@@ -1373,8 +1373,8 @@
                     <td class="${SCRIPT.prefix}-village">${escapeHtml(v.name)}</td>
                     <td>${typeLabel}</td>
                     <td>${fmt(v.points)}</td>
-                    <td>${fmt(target.wood)} / ${fmt(target.stone)} / ${fmt(target.iron)}</td>
-                    <td>${fmt(final.wood)} / ${fmt(final.stone)} / ${fmt(final.iron)}</td>
+                    <td class="${SCRIPT.prefix}-res"><span class="icon header wood"></span>${fmt(target.wood)} / <span class="icon header stone"></span>${fmt(target.stone)} / <span class="icon header iron"></span>${fmt(target.iron)}</td>
+                    <td class="${SCRIPT.prefix}-res"><span class="icon header wood"></span>${fmt(final.wood)} / <span class="icon header stone"></span>${fmt(final.stone)} / <span class="icon header iron"></span>${fmt(final.iron)}</td>
                     <td>${Math.max(0, Math.floor(final.merchantsLeft))}/${v.totalMerchants}</td>
                     <td>${fmt(v.warehouseCapacity)}${overflow ? ' ⚠️' : ''}</td>
                 </tr>
@@ -1388,7 +1388,7 @@
                     <div class="${SCRIPT.prefix}-table-wrap">
                         <table class="${SCRIPT.prefix}-table">
                             <thead>
-                                <tr><th>Village</th><th>Statut</th><th>Points</th><th>Cible B/A/F</th><th>Après plan B/A/F</th><th>Marchands</th><th>Entrepôt</th></tr>
+                                <tr><th>Village</th><th>Statut</th><th>Points</th><th>Cible <span class="icon header wood"></span>/<span class="icon header stone"></span>/<span class="icon header iron"></span></th><th>Après plan <span class="icon header wood"></span>/<span class="icon header stone"></span>/<span class="icon header iron"></span></th><th>Marchands</th><th>Entrepôt</th></tr>
                             </thead>
                             <tbody>${rows}</tbody>
                         </table>
