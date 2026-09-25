@@ -1,6 +1,6 @@
 /*
  * Webi-Time - GT Fake Intelligent
- * Version : 1.30.0
+ * Version : 1.31.0
  * Auteur  : NoLife4Ever / Webi-Time
  *
  * Principes repris et ameliores a partir de plusieurs scripts de fake GT :
@@ -18,7 +18,7 @@
 
     const SCRIPT = Object.freeze({
         name: 'GT Fake Intelligent',
-        version: '1.30.0',
+        version: '1.31.0',
         prefix: 'wtfi'
     });
 
@@ -122,6 +122,7 @@
             players: [],
             tribes: [],
             villageByCoord: new Map(),
+            villageById: new Map(),
             playerById: new Map(),
             tribeById: new Map()
         },
@@ -1017,21 +1018,23 @@
                 url = TribalWars.buildURL('GET', 'overview_villages', {
                     mode: 'commands',
                     type: 'attack',
-                    group: 0
+                    group: 0,
+                    page_size: 1000
                 });
             }
         } catch (_) {}
 
         if (!url) {
-            url = game_data.link_base_pure + 'overview_villages&mode=commands&type=attack&group=0';
+            url = game_data.link_base_pure + 'overview_villages&mode=commands&type=attack&group=0&page_size=1000';
         }
 
         const parsed = new URL(url, window.location.origin);
-        // Toujours lire les commandes de l'ensemble du compte, même si l'interface
+        // Toujours lire les attaques de l'ensemble du compte, même si l'interface
         // Guerre Tribale est actuellement positionnée sur un groupe de villages.
         parsed.searchParams.set('group', '0');
         parsed.searchParams.set('type', 'attack');
         parsed.searchParams.set('mode', 'commands');
+        parsed.searchParams.set('page_size', '1000');
         return parsed.href;
     }
 
@@ -1067,6 +1070,13 @@
         return maxPage;
     }
 
+    function coordFromVillageId(id) {
+        const villageId = parseInt(id, 10);
+        if (!Number.isFinite(villageId)) return '';
+        const village = state.world.villageById && state.world.villageById.get(villageId);
+        return village ? village.coord : '';
+    }
+
     function extractTargetCoordFromCommandRow(row) {
         const candidates = [];
         const push = value => {
@@ -1077,36 +1087,68 @@
         if (label) {
             push(label.textContent);
             push(label.getAttribute('title'));
+            push(label.getAttribute('data-text'));
+            push(label.getAttribute('data-original-text'));
             push(label.innerHTML);
         }
 
-        // Sur les différentes vues GT, la destination se trouve généralement dans
-        // la première cellule de la commande, même si le libellé a été renommé.
+        // Sur une commande non renommée, GT laisse généralement la coordonnée cible
+        // dans le libellé. On inspecte aussi les métadonnées du wrapper QuickEdit.
+        const quickedit = row.querySelector('.quickedit');
+        if (quickedit) {
+            push(quickedit.getAttribute('data-text'));
+            push(quickedit.getAttribute('title'));
+        }
+
         const firstCell = row.querySelector('td');
         if (firstCell) {
             push(firstCell.textContent);
             push(firstCell.getAttribute('title'));
         }
 
-        // Fallback sur les liens vers le village cible. On inspecte texte, titre et href.
-        row.querySelectorAll('a[href*="screen=info_village"], a[href*="info_village"]').forEach(link => {
-            push(link.textContent);
-            push(link.getAttribute('title'));
-            push(link.getAttribute('href'));
-        });
-
         for (const value of candidates) {
             const coord = parseCoordinates(value)[0];
             if (coord) return coord;
         }
+
+        // Si les attaques ont été renommées, le libellé peut ne plus contenir la
+        // coordonnée. Dans ce cas on exploite directement l'ID du village cible
+        // lorsqu'il est présent dans un lien ou un attribut de la ligne.
+        const targetIdCandidates = [];
+        const pushId = value => {
+            const n = parseInt(value, 10);
+            if (Number.isFinite(n) && n > 0) targetIdCandidates.push(n);
+        };
+
+        row.querySelectorAll('[data-target], [data-target-id], [data-village-id]').forEach(node => {
+            pushId(node.getAttribute('data-target'));
+            pushId(node.getAttribute('data-target-id'));
+            pushId(node.getAttribute('data-village-id'));
+        });
+
+        row.querySelectorAll('a[href]').forEach(link => {
+            const href = String(link.getAttribute('href') || '');
+            let match = href.match(/[?&](?:target|id)=(\d+)/);
+            if (match && /info_village|target=/.test(href)) pushId(match[1]);
+        });
+
+        // La source appartient au joueur courant ; si plusieurs IDs apparaissent,
+        // on privilégie donc le village qui ne lui appartient pas.
+        for (const id of targetIdCandidates) {
+            const village = state.world.villageById && state.world.villageById.get(id);
+            if (village && Number(village.playerId) !== Number(game_data.player.id)) return village.coord;
+        }
+        for (const id of targetIdCandidates) {
+            const coord = coordFromVillageId(id);
+            if (coord) return coord;
+        }
+
         return '';
     }
 
     function isOutgoingAttackRow(row) {
         if (!row || !row.querySelector('td')) return false;
 
-        // L'URL type=attack filtre déjà les commandes, mais certaines versions de
-        // l'aperçu peuvent aussi afficher des retours. On les exclut explicitement.
         const iconSources = [...row.querySelectorAll('img[src]')]
             .map(img => String(img.getAttribute('src') || '').toLowerCase())
             .join(' ');
@@ -1120,9 +1162,14 @@
     function addOutgoingCommandRowsToCounts(html, counts) {
         const doc = new DOMParser().parseFromString(String(html || ''), 'text/html');
         const table = doc.querySelector('#commands_table');
-        if (!table) return { rows: 0, parsed: 0, doc };
+        if (!table) return { rows: 0, parsed: 0, unresolved: 0, doc };
 
-        const rows = [...table.querySelectorAll('tr')].filter(isOutgoingAttackRow);
+        // Les classes de lignes sont celles utilisées par l'aperçu GT. Cela évite
+        // de compter les lignes de pagination / total comme des attaques.
+        let rows = [...table.querySelectorAll('.row_a, .row_ax, .row_b, .row_bx')];
+        if (!rows.length) rows = [...table.querySelectorAll('tr')].filter(row => row.querySelector('.quickedit-label'));
+        rows = rows.filter(isOutgoingAttackRow);
+
         let parsed = 0;
         for (const row of rows) {
             const coord = extractTargetCoordFromCommandRow(row);
@@ -1130,11 +1177,63 @@
             counts.set(coord, (counts.get(coord) || 0) + 1);
             parsed++;
         }
-        return { rows: rows.length, parsed, doc };
+        return { rows: rows.length, parsed, unresolved: Math.max(0, rows.length - parsed), doc };
+    }
+
+    function getVillageInfoUrl(villageId) {
+        const base = new URL(game_data.link_base_pure + 'info_village', window.location.origin);
+        base.searchParams.set('id', String(villageId));
+        return base.href;
+    }
+
+    function countIncomingAttacksOnVillageInfo(html) {
+        const doc = new DOMParser().parseFromString(String(html || ''), 'text/html');
+        const box = doc.querySelector('#commands_incomings');
+        if (!box) return 0;
+
+        let count = 0;
+        const rows = [...box.querySelectorAll('tr.command-row, tr')];
+        for (const row of rows) {
+            if (!row.querySelector('td')) continue;
+            const icons = [...row.querySelectorAll('img[src], span[class]')].map(node =>
+                `${String(node.getAttribute('src') || '')} ${String(node.getAttribute('class') || '')}`.toLowerCase()
+            ).join(' ');
+            if (/support|return|back/.test(icons)) continue;
+            if (/attack/.test(icons)) count++;
+        }
+        return count;
+    }
+
+    async function refreshCountsFromTargetVillages(counts) {
+        const settings = $('#' + SCRIPT.prefix + 'PanelWrap').length
+            ? collectSettingsFromUI()
+            : state.settings;
+        const targets = getTargetQueue(settings);
+        const villages = targets
+            .map(coord => state.world.villageByCoord.get(coord))
+            .filter(Boolean);
+
+        // Fallback utilisé uniquement si l'aperçu global contient des commandes
+        // impossibles à rattacher à une cible (typiquement après renommage).
+        // On limite la concurrence pour ne pas marteler le serveur.
+        const concurrency = 4;
+        let cursor = 0;
+        async function worker() {
+            while (cursor < villages.length) {
+                const village = villages[cursor++];
+                try {
+                    const html = await fetchCommandsHtml(getVillageInfoUrl(village.id));
+                    counts.set(village.coord, countIncomingAttacksOnVillageInfo(html));
+                } catch (error) {
+                    console.warn(`[${SCRIPT.name}] Compteur cible indisponible pour ${village.coord}`, error);
+                }
+            }
+        }
+        await Promise.all(Array.from({ length: Math.min(concurrency, villages.length) }, () => worker()));
     }
 
     async function refreshOutgoingAttackCounts(force = false) {
-        const maxAge = 15000;
+        const maxAge = 30000;
         if (!force && state.outgoingAttackCountsLoaded && Date.now() - state.outgoingAttackCountsAt < maxAge) {
             return state.outgoingAttackCounts;
         }
@@ -1144,28 +1243,31 @@
             const counts = new Map();
             const baseUrl = getOutgoingCommandsBaseUrl();
 
-            // page=-1 permet normalement de récupérer jusqu'à 1000 commandes en une fois.
-            // Si le serveur ne renvoie aucune ligne avec cette valeur, on retente page=0.
-            let firstHtml = await fetchCommandsHtml(withPageParameter(baseUrl, -1));
-            let first = addOutgoingCommandRowsToCounts(firstHtml, counts);
-            if (first.rows === 0) {
-                firstHtml = await fetchCommandsHtml(withPageParameter(baseUrl, 0));
-                first = addOutgoingCommandRowsToCounts(firstHtml, counts);
+            // On commence toujours par la vraie première page. L'ancien page=-1 peut
+            // renvoyer une ligne de statut sans commande et faisait croire au script
+            // que l'aperçu avait été correctement analysé.
+            const firstHtml = await fetchCommandsHtml(withPageParameter(baseUrl, 0));
+            const first = addOutgoingCommandRowsToCounts(firstHtml, counts);
+            let totalRows = first.rows;
+            let totalParsed = first.parsed;
+            let unresolved = first.unresolved;
+
+            const maxPage = getCommandsMaxPage(first.doc);
+            for (let page = 1; page <= maxPage && page < 250; page++) {
+                const html = await fetchCommandsHtml(withPageParameter(baseUrl, page));
+                const result = addOutgoingCommandRowsToCounts(html, counts);
+                totalRows += result.rows;
+                totalParsed += result.parsed;
+                unresolved += result.unresolved;
             }
 
-            // Lorsque page=-1 contient 1000 commandes ou davantage, on poursuit sur
-            // les pages suivantes. La déduplication se fait par page : on ne reparcourt
-            // page=0 que si page=-1 n'était pas exploitable.
-            if (first.rows >= 1000) {
-                const pageSizeInput = first.doc.querySelector('input[name="page_size"]');
-                const pageSize = Math.max(1, parseInt(pageSizeInput && pageSizeInput.value, 10) || 100);
-                const maxPage = getCommandsMaxPage(first.doc);
-                let page = Math.max(1, Math.floor(first.rows / pageSize));
-                while (page <= maxPage && page < 250) {
-                    const html = await fetchCommandsHtml(withPageParameter(baseUrl, page));
-                    addOutgoingCommandRowsToCounts(html, counts);
-                    page++;
-                }
+            // Si une commande est renommée sans coordonnées, l'aperçu global ne
+            // permet plus toujours d'identifier sa cible. Dans ce cas, on relit
+            // directement la fiche de chaque village de la playlist et on compte
+            // ses attaques entrantes réelles. Ces valeurs écrasent le comptage
+            // partiel de l'aperçu et deviennent la source de vérité.
+            if (unresolved > 0 || (totalRows > 0 && totalParsed === 0)) {
+                await refreshCountsFromTargetVillages(counts);
             }
 
             state.outgoingAttackCounts = counts;
@@ -1839,6 +1941,7 @@
         state.world.tribeById = new Map(tribes.map(x => [x.id, x]));
         state.world.playerById = new Map(players.map(x => [x.id, x]));
         state.world.villageByCoord = new Map(villages.map(x => [x.coord, x]));
+        state.world.villageById = new Map(villages.map(x => [x.id, x]));
     }
 
     function getAvailableTroops() {
